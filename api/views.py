@@ -5,7 +5,7 @@ from rest_framework.views import View
 from rest_framework import mixins, generics
 # Create your views here.
 
-class TheoryView(generics.RetrieveUpdateDestroyAPIView, mixins.ListModelMixin, mixins.CreateModelMixin):
+class TheoryView(generics.RetrieveDestroyAPIView, mixins.ListModelMixin, mixins.CreateModelMixin):
     queryset = Theory.objects.all()
     serializer_class = TheoryModelSerializer
 

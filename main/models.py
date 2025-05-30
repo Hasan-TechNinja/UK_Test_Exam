@@ -1,12 +1,14 @@
 from django.db import models
-from tinymce.models import HTMLField
+# from tinymce.models import HTMLField
+from ckeditor.fields import RichTextField
+
 from django.contrib.auth.models import User
 
 # Create your models here.
 
 
 class TheoryCategory(models.Model):
-    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='theory_categories')
     name = models.CharField(max_length=100)
     description = models.TextField(blank=True, null=True)
     created = models.DateTimeField(auto_now_add=True)
@@ -18,8 +20,9 @@ class TheoryCategory(models.Model):
 class Theory(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     title = models.CharField(max_length=100)
-    description = HTMLField()
-    category = models.ForeignKey(TheoryCategory, on_delete=models.CASCADE)
+    # description = HTMLField()
+    description = RichTextField()
+    category = models.ForeignKey(TheoryCategory, on_delete=models.CASCADE, related_name='theories', null=True, blank=True)
     created = models.DateTimeField(auto_now_add=True)
     updated = models.DateTimeField(auto_now=True)
 
@@ -28,3 +31,5 @@ class Theory(models.Model):
     
     class Meta:
         ordering = ['-created']
+        verbose_name = "Theory"
+        verbose_name_plural = "Theories"
