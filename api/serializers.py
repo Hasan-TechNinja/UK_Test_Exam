@@ -11,3 +11,7 @@ class TheoryCategorySerializers(serializers.ModelSerializer):
     class Meta:
         model = TheoryCategory
         exclude = ['user', 'created']
+
+    def create(self, validated_data):
+        validated_data['user'] = self.context['request'].user
+        return super().create(validated_data)
