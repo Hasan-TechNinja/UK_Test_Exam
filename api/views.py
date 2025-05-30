@@ -1,6 +1,6 @@
 from django.shortcuts import render
-from main.models import Theory
-from . serializers import TheoryModelSerializer
+from main.models import Theory, TheoryCategory
+from . serializers import TheoryModelSerializer, TheoryCategorySerializers
 from rest_framework.views import View
 from rest_framework import mixins, generics
 # Create your views here.
@@ -14,3 +14,11 @@ class TheoryView(generics.RetrieveDestroyAPIView, mixins.ListModelMixin, mixins.
 
     def post(self, request):
         return self.create(request)
+    
+
+class CategoryCreateView(generics.CreateAPIView):
+    queryset = TheoryCategory.objects.all()
+    serializer_class = TheoryCategorySerializers
+
+    # def post(self, request):
+    #     return self.create(request)
