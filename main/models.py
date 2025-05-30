@@ -6,7 +6,6 @@ from django.contrib.auth.models import User
 
 # Create your models here.
 
-
 class TheoryCategory(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='theory_categories')
     name = models.CharField(max_length=100)
