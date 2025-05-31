@@ -1,17 +1,23 @@
 from rest_framework import serializers
-from main.models import Theory, TheoryCategory
+from main.models import Unit, Lesson, Question
 
-class TheoryModelSerializer(serializers.ModelSerializer):
+class UnitModelSerializer(serializers.ModelSerializer):
     class Meta:
-        model = Theory
+        model = Unit
         # fields = "__all__"
         exclude = ['updated']
 
-class TheoryCategorySerializers(serializers.ModelSerializer):
+class LessonSerializers(serializers.ModelSerializer):
     class Meta:
-        model = TheoryCategory
+        model = Lesson
         exclude = ['user', 'created']
 
     def create(self, validated_data):
         validated_data['user'] = self.context['request'].user
         return super().create(validated_data)
+    
+
+class QuestionModelSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Question
+        fields = "__all__"

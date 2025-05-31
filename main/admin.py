@@ -1,16 +1,23 @@
 from django.contrib import admin
-from . models import Theory, TheoryCategory
+from . models import Unit, Lesson, Question
 
 # Register your models here.
 
-class TheoryModelAdmin(admin.ModelAdmin):
+class UnitModelAdmin(admin.ModelAdmin):
     list_display = (
-        'id', 'user', 'title', 'description', 'created', 'updated'
+        'id', 'user', 'name', 'description', 'image', 'created'
     )
-admin.site.register(Theory, TheoryModelAdmin)
+admin.site.register(Unit, UnitModelAdmin)
 
-class TheoryCategoryModelAdmin(admin.ModelAdmin):
+class LessonModelAdmin(admin.ModelAdmin):
     list_display = (
-        'id', 'user', 'name', 'description', 'created'
+        'id', 'user', 'title', 'description', 'unit', 'theory', 'structure', 'created', 'updated'
     )
-admin.site.register(TheoryCategory, TheoryCategoryModelAdmin)
+admin.site.register(Lesson, LessonModelAdmin)
+
+
+class QuestionModelAdmin(admin.ModelAdmin):
+    list_display = (
+        'id', 'text', 'audio', 'type', 'option'
+    )
+admin.site.register(Question, QuestionModelAdmin)
