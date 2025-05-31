@@ -2,7 +2,7 @@ from django.shortcuts import render
 from main.models import Theory, TheoryCategory
 from . serializers import TheoryModelSerializer, TheoryCategorySerializers
 from rest_framework.views import View
-from rest_framework import mixins, generics
+from rest_framework import mixins, generics, status, viewsets
 # Create your views here.
 
 class TheoryView(generics.RetrieveDestroyAPIView, mixins.ListModelMixin, mixins.CreateModelMixin):
@@ -18,7 +18,10 @@ class TheoryView(generics.RetrieveDestroyAPIView, mixins.ListModelMixin, mixins.
 
 class CategoryCreateView(generics.CreateAPIView):
     queryset = TheoryCategory.objects.all()
-    serializer_class = TheoryCategorySerializers
+    serializer_class = TheoryCategorySerializers 
 
-    # def post(self, request):
-    #     return self.create(request)
+
+class TheoryDetailsView(generics.RetrieveUpdateDestroyAPIView):
+    queryset = Theory.objects.all()
+    serializer_class = TheoryModelSerializer
+    lookup_field = "pk"
