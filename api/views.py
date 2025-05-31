@@ -27,3 +27,9 @@ from rest_framework import mixins, generics, status, viewsets
 #     queryset = Theory.objects.all()
 #     serializer_class = TheoryModelSerializer
 #     lookup_field = "pk"
+
+class QuestionView(generics.CreateAPIView, generics.RetrieveUpdateDestroyAPIView):
+    queryset = Question.objects.all()
+    serializer_class = QuestionModelSerializer
+
+
