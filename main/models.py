@@ -4,11 +4,10 @@ from django.contrib.auth.models import User
 
 # Create your models here.
 
-class Unit(models.Model):
+class Chapter(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='theory_categories')
     name = models.CharField(max_length=100)
     description = models.TextField(blank=True, null=True)
-    image = models.ImageField(upload_to='unit')
     created = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
@@ -19,9 +18,9 @@ class Lesson(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     title = models.CharField(max_length=100)
     description = models.CharField(max_length=150)
-    unit = models.ForeignKey(Unit, on_delete=models.CASCADE)
+    chapter = models.ForeignKey(Chapter, on_delete=models.CASCADE, blank=True, null=True)
     theory = RichTextField()
-    structure = models.JSONField() 
+    audio = models.CharField(max_length=300, blank=True, null=True) 
     created = models.DateTimeField(auto_now_add=True)
     updated = models.DateTimeField(auto_now=True)
 

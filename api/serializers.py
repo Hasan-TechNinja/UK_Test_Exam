@@ -1,10 +1,10 @@
 from rest_framework import serializers
-from main.models import Unit, Lesson, Question
+from main.models import Chapter, Lesson, Question
 from django.contrib.auth.models import User
 
-class UnitModelSerializer(serializers.ModelSerializer):
+class ChapterModelSerializer(serializers.ModelSerializer):
     class Meta:
-        model = Unit
+        model = Chapter
         # fields = "__all__"
         exclude = ['created']
 
