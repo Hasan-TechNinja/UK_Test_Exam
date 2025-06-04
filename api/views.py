@@ -1,6 +1,7 @@
 from django.shortcuts import render
-from main.models import Question, Lesson, Chapter
-from . serializers import LessonSerializers, QuestionModelSerializer, ChapterModelSerializer, RegisterSerializer
+from main.models import Question, Lesson, Chapter, Profile
+from . serializers import LessonSerializers, QuestionModelSerializer, ChapterModelSerializer, RegisterSerializer, ProfileModelSerializer
+
 from rest_framework.views import View, APIView
 from rest_framework import mixins, generics, status, viewsets
 from rest_framework.response import Response
@@ -43,6 +44,15 @@ class LogoutView(APIView):
     def post(self, request):
         request.user.auth_token.delete()
         return Response({'message': 'Logout successfully'}, status=status.HTTP_200_OK)
+    
+
+class ProfileView(generics.RetrieveUpdateAPIView):
+    permission_classes = [IsAuthenticated]
+    serializer_class = ProfileModelSerializer
+
+    def get_object(self):
+        return self.request.user.profile
+
     
 # --------------------------------------------------End Authentication---------------------------------------------
 
