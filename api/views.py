@@ -49,6 +49,9 @@ class LogoutView(APIView):
 class QuestionView(generics.ListCreateAPIView, generics.RetrieveUpdateDestroyAPIView):
     queryset = Question.objects.all()
     serializer_class = QuestionModelSerializer
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAuthenticated]
+    # lookup_field = 'pk'
 
 
 class LessonView(generics.ListCreateAPIView):
