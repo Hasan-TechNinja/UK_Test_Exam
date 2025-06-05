@@ -1,5 +1,6 @@
 from django.contrib import admin
 from . models import Chapter, Lesson, Question, Profile
+from rest_framework.authtoken.models import Token
 
 # Register your models here.
 
@@ -28,3 +29,12 @@ class ProfileModelAdmin(admin.ModelAdmin):
         'id', 'full_name', 'app_language', 'listening_language', 'image', 'font_size', 'theme_mode', 'created_at'
     )
 admin.site.register(Profile, ProfileModelAdmin)
+
+
+class TokenAdmin(admin.ModelAdmin):
+    list_display = (
+        'key', 'user', 'created'
+        )
+    search_fields = ('user__username',)
+
+admin.site.register(Token, TokenAdmin)
