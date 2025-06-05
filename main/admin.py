@@ -31,10 +31,3 @@ class ProfileModelAdmin(admin.ModelAdmin):
 admin.site.register(Profile, ProfileModelAdmin)
 
 
-class TokenAdmin(admin.ModelAdmin):
-    list_display = (
-        'key', 'user', 'created'
-        )
-    search_fields = ('user__username',)
-
-admin.site.register(Token, TokenAdmin)
