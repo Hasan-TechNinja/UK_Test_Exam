@@ -1,4 +1,4 @@
-from django.shortcuts import render
+from django.shortcuts import render, get_object_or_404
 
 from main.models import Question, Lesson, Chapter, Profile
 from . serializers import LessonModelSerializers, QuestionModelSerializer, ChapterModelSerializer, RegisterSerializer, ProfileModelSerializer
@@ -56,36 +56,38 @@ class ProfileView(generics.RetrieveUpdateAPIView):
         return self.request.user.profile
 
     
-# --------------------------------------------------End Authentication---------------------------------------------
+# --------------------------------------------------Admin Control---------------------------------------------
 
 class QuestionView(generics.ListCreateAPIView, generics.RetrieveUpdateDestroyAPIView):
     queryset = Question.objects.all()
     serializer_class = QuestionModelSerializer
-    # authentication_classes = [TokenAuthentication]
-    permission_classes = [IsAuthenticated]
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAdminUser]
     # lookup_field = 'pk'
 
 
 class LessonView(generics.ListCreateAPIView):
     queryset = Lesson.objects.all()
     serializer_class = LessonModelSerializers
-    # authentication_classes = [TokenAuthentication]
-    # permission_classes = [IsAuthenticated]
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAdminUser]
 
 
 class ChapterView(generics.ListCreateAPIView):
     queryset = Chapter.objects.all()
     serializer_class = ChapterModelSerializer
-    # permission_classes = [IsAdminOrReadOnly]
+    permission_classes = [IsAdminUser]
+
 
 # --------------------------------------------------------Study Start--------------------------------------
-class StudyChapters(APIView):
+class ChapterListView(APIView):
     def get(self, request):
         chapter = Chapter.objects.all()
         serializer = ChapterModelSerializer(chapter, many = True)
         return Response(serializer.data, status=status.HTTP_200_OK)
+    
 
-class StudyChapterLessons(APIView):
+class ChapterLessonsView(APIView):
     def get(self, request):
         lesson = Lesson.objects.all()
         serializer = LessonModelSerializers(lesson, many = True)
@@ -99,16 +101,27 @@ class StudyChapterLessons(APIView):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
         
 
-class StudyChapterLessonDetails(APIView):
+# class StudyChapterLessonDetails(APIView):
+#     def get(self, request, pk):
+#         try:
+#             chapter = Chapter.objects.get(pk = pk)
+#         except Chapter.DoesNotExist:
+#             return Response({"detail": "Chapter not found."}, status=status.HTTP_404_NOT_FOUND)
+
+#         lessons = Lesson.objects.filter(chapter=chapter)
+#         serializer = LessonModelSerializers(lessons, many=True)
+#         return Response(serializer.data, status=status.HTTP_200_OK)
+
+class LessonDetailView(APIView):
     def get(self, request, pk):
         try:
-            chapter = Chapter.objects.get(pk = pk)
-        except Chapter.DoesNotExist:
-            return Response({"detail": "Chapter not found."}, status=status.HTTP_404_NOT_FOUND)
+            lesson = Lesson.objects.get(pk=pk)
+        except Lesson.DoesNotExist:
+            return Response({"detail": "Lesson not found."}, status=status.HTTP_404_NOT_FOUND)
 
-        lessons = Lesson.objects.filter(chapter=chapter)
-        serializer = LessonModelSerializers(lessons, many=True)
+        serializer = LessonModelSerializers(lesson)
         return Response(serializer.data, status=status.HTTP_200_OK)
+
     
 # -----------------------------------------------------Study End-------------------------------------
     

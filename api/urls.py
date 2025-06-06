@@ -11,7 +11,7 @@ urlpatterns = [
     path('profile/', views.ProfileView.as_view(), name='profile'),
 
     # path('study/', views.StudyChapterLessonDetails.as_view(), name='study'),
-    path('sclt/<int:pk>', views.StudyChapterLessonDetails.as_view(), name='study'),
-    path('studyChap/', views.StudyChapters.as_view(), name="studyChap"),
-    path('scl/', views.StudyChapterLessons.as_view(), name="StCpLs"),
+    path('chapters/', views.ChapterListView.as_view(), name="chapters"),
+    path('lessons/', views.ChapterLessonsView.as_view(), name="lessons"),
+    path('lessonDetails/<int:pk>', views.LessonDetailView.as_view(), name='lessonDetails'),
 ]
