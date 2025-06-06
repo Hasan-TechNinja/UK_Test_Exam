@@ -80,10 +80,39 @@ class ChapterAdminView(generics.ListCreateAPIView):
 
 
 class GuideSupportAdminView(generics.ListCreateAPIView):
-    queryset = GuidesSupport
+    queryset = GuidesSupport.objects.all()
     serializer_class = GuidesSupportModelSerializer
     authentication_classes = [TokenAuthentication]
     permission_classes = [IsAdminUser]
+
+# --------------------------------------------------Admin details view--------------------------------------
+class QuestionDetailsAdminView(generics.RetrieveUpdateDestroyAPIView):
+    queryset = Question.objects.all()
+    serializer_class = QuestionModelSerializer
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAdminUser]
+    lookup_field = "pk"
+
+class LessonDetailsAdminView(generics.RetrieveUpdateDestroyAPIView):
+    queryset = Lesson.objects.all()
+    serializer_class = LessonModelSerializers
+    permission_classes = [IsAdminUser]
+    lookup_field = "pk"
+
+class ChapterDetailsAdminView(generics.RetrieveUpdateDestroyAPIView):
+    queryset = Chapter.objects.all()
+    serializer_class = ChapterModelSerializer
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAdminUser]
+    lookup_field = "pk"
+
+class GuideSupportDetailsAdminView(generics.RetrieveUpdateDestroyAPIView):
+    queryset = GuidesSupport.objects.all()
+    serializer_class = GuidesSupportModelSerializer
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAdminUser]
+    lookup_field = "pk"
+
 
 # --------------------------------------------------------Study section--------------------------------------
 class ChapterListView(APIView):
@@ -137,7 +166,7 @@ class GuideSupportView(APIView):
         serializer = GuidesSupportModelSerializer(guid, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
-class GuidSupportDetailsView(APIView):
+class GuideSupportDetailsView(APIView):
     def get(self, request, pk):
         guid = get_object_or_404(GuidesSupport, pk = pk)
         serializer = GuidesSupportModelSerializer(guid, many=False)

@@ -34,6 +34,6 @@ admin.site.register(Profile, ProfileModelAdmin)
 
 class GuidesSupportModelAdmin(admin.ModelAdmin):
     list_display = (
-        'id', 'title', 'description', 'status', 'created'
+        'id', 'name', 'title', 'description', 'status', 'created'
     )
 admin.site.register(GuidesSupport, GuidesSupportModelAdmin)

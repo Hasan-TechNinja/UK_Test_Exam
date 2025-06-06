@@ -59,6 +59,7 @@ class Question(models.Model):
     
 
 class GuidesSupport(models.Model):
+    name = models.CharField(max_length=150, default="")
     title = models.CharField(max_length=200)
     image = models.ImageField(upload_to="GuidesAndSupport", blank=True, null=True)
     description = RichTextField()
