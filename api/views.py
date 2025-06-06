@@ -1,7 +1,7 @@
 from django.shortcuts import render, get_object_or_404
 
-from main.models import Question, Lesson, Chapter, Profile
-from . serializers import LessonModelSerializers, QuestionModelSerializer, ChapterModelSerializer, RegisterSerializer, ProfileModelSerializer
+from main.models import Question, Lesson, Chapter, Profile, GuidesSupport
+from . serializers import LessonModelSerializers, QuestionModelSerializer, ChapterModelSerializer, RegisterSerializer, ProfileModelSerializer, GuidesSupportModelSerializer
 # from . permissions import IsAdminOrReadOnly
 
 from rest_framework.views import View, APIView
@@ -17,7 +17,7 @@ from django.contrib.auth import authenticate
 # # Create your views here.
 
 
-# -----------------------------------------------Start Authentication----------------------------------
+# -----------------------------------------------Authentication section----------------------------------
 class RegisterView(APIView):
     def post(self, request):
         serializer = RegisterSerializer(data=request.data)
@@ -58,7 +58,7 @@ class ProfileView(generics.RetrieveUpdateAPIView):
     
 # --------------------------------------------------Admin Control---------------------------------------------
 
-class QuestionView(generics.ListCreateAPIView, generics.RetrieveUpdateDestroyAPIView):
+class QuestionAdminView(generics.ListCreateAPIView, generics.RetrieveUpdateDestroyAPIView):
     queryset = Question.objects.all()
     serializer_class = QuestionModelSerializer
     authentication_classes = [TokenAuthentication]
@@ -66,20 +66,26 @@ class QuestionView(generics.ListCreateAPIView, generics.RetrieveUpdateDestroyAPI
     # lookup_field = 'pk'
 
 
-class LessonView(generics.ListCreateAPIView):
+class LessonAdminView(generics.ListCreateAPIView):
     queryset = Lesson.objects.all()
     serializer_class = LessonModelSerializers
     authentication_classes = [TokenAuthentication]
     permission_classes = [IsAdminUser]
 
 
-class ChapterView(generics.ListCreateAPIView):
+class ChapterAdminView(generics.ListCreateAPIView):
     queryset = Chapter.objects.all()
     serializer_class = ChapterModelSerializer
     permission_classes = [IsAdminUser]
 
 
-# --------------------------------------------------------Study Start--------------------------------------
+class GuideSupportAdminView(generics.ListCreateAPIView):
+    queryset = GuidesSupport
+    serializer_class = GuidesSupportModelSerializer
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAdminUser]
+
+# --------------------------------------------------------Study section--------------------------------------
 class ChapterListView(APIView):
     def get(self, request):
         chapter = Chapter.objects.all()
@@ -123,5 +129,16 @@ class LessonDetailView(APIView):
         return Response(serializer.data, status=status.HTTP_200_OK)
 
     
-# -----------------------------------------------------Study End-------------------------------------
+# -----------------------------------------------------Guides & Support section-------------------------------------
     
+class GuideSupportView(APIView):
+    def get(self, request):
+        guid = GuidesSupport.objects.all()
+        serializer = GuidesSupportModelSerializer(guid, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+class GuidSupportDetailsView(APIView):
+    def get(self, request, pk):
+        guid = get_object_or_404(GuidesSupport, pk = pk)
+        serializer = GuidesSupportModelSerializer(guid, many=False)
+        return Response(serializer.data, status=status.HTTP_200_OK)

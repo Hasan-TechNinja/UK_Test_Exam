@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from main.models import Chapter, Lesson, Question, Profile
+from main.models import Chapter, Lesson, Question, Profile, GuidesSupport
 from django.contrib.auth.models import User
 
 class ChapterModelSerializer(serializers.ModelSerializer):
@@ -48,3 +48,9 @@ class ProfileModelSerializer(serializers.ModelSerializer):
     class Meta:
         model = Profile
         exclude = ["user", "created_at"]
+
+
+class GuidesSupportModelSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = GuidesSupport
+        exclude = ['status', 'created']
