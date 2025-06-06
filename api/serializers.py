@@ -8,14 +8,22 @@ class ChapterModelSerializer(serializers.ModelSerializer):
         # fields = "__all__"
         exclude = ['created']
 
-class LessonSerializers(serializers.ModelSerializer):
-    class Meta:
-        model = Lesson
-        exclude = ['user', 'created']
+    user = serializers.HiddenField(default=serializers.CurrentUserDefault())
 
     def create(self, validated_data):
-        validated_data['user'] = self.context['request'].user
+        # You can remove this if you're using HiddenField
         return super().create(validated_data)
+
+class LessonModelSerializers(serializers.ModelSerializer):
+    user = serializers.HiddenField(default=serializers.CurrentUserDefault())
+    class Meta:
+        model = Lesson
+        exclude = ['created']
+
+    def create(self, validated_data):
+    
+        return super().create(validated_data)
+
     
 
 class QuestionModelSerializer(serializers.ModelSerializer):

@@ -29,5 +29,3 @@ class ProfileModelAdmin(admin.ModelAdmin):
         'id', 'full_name', 'app_language', 'listening_language', 'image', 'font_size', 'theme_mode', 'created_at'
     )
 admin.site.register(Profile, ProfileModelAdmin)
-
-

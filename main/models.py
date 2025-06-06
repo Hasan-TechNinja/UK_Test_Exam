@@ -43,8 +43,8 @@ class Lesson(models.Model):
     
     class Meta:
         ordering = ['-created']
-        verbose_name = "Theory"
-        verbose_name_plural = "Theories"
+        # verbose_name = "Theory"
+        # verbose_name_plural = "Theories"
 
 
 class Question(models.Model):

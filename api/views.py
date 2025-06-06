@@ -1,13 +1,15 @@
 from django.shortcuts import render
+
 from main.models import Question, Lesson, Chapter, Profile
-from . serializers import LessonSerializers, QuestionModelSerializer, ChapterModelSerializer, RegisterSerializer, ProfileModelSerializer
+from . serializers import LessonModelSerializers, QuestionModelSerializer, ChapterModelSerializer, RegisterSerializer, ProfileModelSerializer
+# from . permissions import IsAdminOrReadOnly
 
 from rest_framework.views import View, APIView
 from rest_framework import mixins, generics, status, viewsets
 from rest_framework.response import Response
 
 from rest_framework.authtoken.models import Token
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import IsAuthenticated, IsAdminUser
 from rest_framework.authentication import TokenAuthentication
 from rest_framework.decorators import api_view, authentication_classes, permission_classes
 from django.contrib.auth import authenticate
@@ -59,18 +61,54 @@ class ProfileView(generics.RetrieveUpdateAPIView):
 class QuestionView(generics.ListCreateAPIView, generics.RetrieveUpdateDestroyAPIView):
     queryset = Question.objects.all()
     serializer_class = QuestionModelSerializer
-    authentication_classes = [TokenAuthentication]
+    # authentication_classes = [TokenAuthentication]
     permission_classes = [IsAuthenticated]
     # lookup_field = 'pk'
 
 
 class LessonView(generics.ListCreateAPIView):
     queryset = Lesson.objects.all()
-    serializer_class = LessonSerializers
-    authentication_classes = [TokenAuthentication]
-    permission_classes = [IsAuthenticated]
+    serializer_class = LessonModelSerializers
+    # authentication_classes = [TokenAuthentication]
+    # permission_classes = [IsAuthenticated]
 
 
 class ChapterView(generics.ListCreateAPIView):
     queryset = Chapter.objects.all()
     serializer_class = ChapterModelSerializer
+    # permission_classes = [IsAdminOrReadOnly]
+
+# --------------------------------------------------------Study Start--------------------------------------
+class StudyChapters(APIView):
+    def get(self, request):
+        chapter = Chapter.objects.all()
+        serializer = ChapterModelSerializer(chapter, many = True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+class StudyChapterLessons(APIView):
+    def get(self, request):
+        lesson = Lesson.objects.all()
+        serializer = LessonModelSerializers(lesson, many = True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+    
+    def post(self, request):
+        serializer = LessonModelSerializers(data = request.data, context={'request': request})
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        
+
+class StudyChapterLessonDetails(APIView):
+    def get(self, request, pk):
+        try:
+            chapter = Chapter.objects.get(pk = pk)
+        except Chapter.DoesNotExist:
+            return Response({"detail": "Chapter not found."}, status=status.HTTP_404_NOT_FOUND)
+
+        lessons = Lesson.objects.filter(chapter=chapter)
+        serializer = LessonModelSerializers(lessons, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+    
+# -----------------------------------------------------Study End-------------------------------------
+    
