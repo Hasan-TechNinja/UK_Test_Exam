@@ -8,6 +8,7 @@ urlpatterns = [
     path('chapterAdmin/', views.ChapterAdminView.as_view(), name='chapterAdmin'),
     path('guideAdmin/', views.GuideSupportAdminView.as_view(), name='guideAdmin'),
     
+    #admin details view
     path('guideAdmin/<int:pk>', views.GuideSupportDetailsAdminView.as_view(), name='guideAdmin'),
     path('chapterAdmin/<int:pk>', views.ChapterDetailsAdminView.as_view(), name='chapterAdmin'),
     path('lessonAdmin/<int:pk>', views.LessonDetailsAdminView.as_view(), name='lessonAdmin'),
@@ -21,8 +22,8 @@ urlpatterns = [
 
     # user 
     path('chapters/', views.ChapterListView.as_view(), name="chapters"),
-    path('lessons/', views.ChapterLessonsView.as_view(), name="lessons"),
-    path('lessonDetails/<int:pk>', views.LessonDetailView.as_view(), name='lessonDetails'),
+    path('chapters/<int:pk>', views.ChapterLessonsView.as_view(), name="chapters"),
+    path('chapters/<int:chapter_id>/<int:lesson_id>/', views.ChapterLessonDetailView.as_view(), name="chapter-lesson-detail"),
     path('guide/', views.GuideSupportView.as_view(), name='guid'),
     path('guide/<int:pk>/', views.GuideSupportDetailsView.as_view(), name='guideDetails'),
 ]

@@ -63,7 +63,6 @@ class QuestionAdminView(generics.ListCreateAPIView, generics.RetrieveUpdateDestr
     serializer_class = QuestionModelSerializer
     authentication_classes = [TokenAuthentication]
     permission_classes = [IsAdminUser]
-    # lookup_field = 'pk'
 
 
 class LessonAdminView(generics.ListCreateAPIView):
@@ -123,39 +122,20 @@ class ChapterListView(APIView):
     
 
 class ChapterLessonsView(APIView):
-    def get(self, request):
-        lesson = Lesson.objects.all()
-        serializer = LessonModelSerializers(lesson, many = True)
+    def get(self, request, pk):
+        chapter = get_object_or_404(Chapter, id=pk)
+        lessons = Lesson.objects.filter(chapter=chapter)
+        serializer = LessonModelSerializers(lessons, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
     
-    def post(self, request):
-        serializer = LessonModelSerializers(data = request.data, context={'request': request})
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-        
 
-# class StudyChapterLessonDetails(APIView):
-#     def get(self, request, pk):
-#         try:
-#             chapter = Chapter.objects.get(pk = pk)
-#         except Chapter.DoesNotExist:
-#             return Response({"detail": "Chapter not found."}, status=status.HTTP_404_NOT_FOUND)
 
-#         lessons = Lesson.objects.filter(chapter=chapter)
-#         serializer = LessonModelSerializers(lessons, many=True)
-#         return Response(serializer.data, status=status.HTTP_200_OK)
-
-class LessonDetailView(APIView):
-    def get(self, request, pk):
-        try:
-            lesson = Lesson.objects.get(pk=pk)
-        except Lesson.DoesNotExist:
-            return Response({"detail": "Lesson not found."}, status=status.HTTP_404_NOT_FOUND)
-
+class ChapterLessonDetailView(APIView):
+    def get(self, request, chapter_id, lesson_id):
+        lesson = get_object_or_404(Lesson, id=lesson_id, chapter_id=chapter_id)
         serializer = LessonModelSerializers(lesson)
         return Response(serializer.data, status=status.HTTP_200_OK)
+
 
     
 # -----------------------------------------------------Guides & Support section-------------------------------------
