@@ -1,7 +1,7 @@
 from django.shortcuts import render, get_object_or_404
 
-from main.models import Question, Lesson, Chapter, Profile, GuidesSupport, HomePage, GuideSupportList, LessonList
-from . serializers import LessonModelSerializers, QuestionModelSerializer, ChapterModelSerializer, RegisterSerializer, ProfileModelSerializer, GuidesSupportModelSerializer, HomePageModelSerializer, GuideSupportListModelSerializer, LessonListModelSerializer
+from main.models import Question, Lesson, Chapter, Profile, GuidesSupport, HomePage, GuideSupportList, LessonList, UserEvaluation
+from . serializers import LessonModelSerializers, QuestionModelSerializer, ChapterModelSerializer, RegisterSerializer, ProfileModelSerializer, GuidesSupportModelSerializer, HomePageModelSerializer, GuideSupportListModelSerializer, LessonListModelSerializer, UserEvaluationModelSerializer
 # from . permissions import IsAdminOrReadOnly
 
 from rest_framework.views import View, APIView
@@ -119,6 +119,15 @@ class LessonDetailsAdminView(generics.RetrieveUpdateDestroyAPIView):
     permission_classes = [IsAdminUser]
     lookup_field = "pk"
 
+
+class LessonListAdminViewDetailsAdminView(generics.RetrieveUpdateDestroyAPIView):
+    queryset = LessonList
+    serializer_class = LessonListModelSerializer
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAdminUser]
+    lookup_field = "pk"
+
+
 class ChapterDetailsAdminView(generics.RetrieveUpdateDestroyAPIView):
     queryset = Chapter.objects.all()
     serializer_class = ChapterModelSerializer
@@ -137,27 +146,47 @@ class GuideSupportDetailsAdminView(generics.RetrieveUpdateDestroyAPIView):
 # --------------------------------------------------------Study section--------------------------------------
 class ChapterListView(APIView):
     def get(self, request):
-        chapter = Chapter.objects.all()
-        serializer = ChapterModelSerializer(chapter, many = True)
+        chapters = Chapter.objects.all().order_by('id')
+        serializer = ChapterModelSerializer(chapters, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
     
 
 class ChapterLessonsView(APIView):
     def get(self, request, pk):
         chapter = get_object_or_404(Chapter, id=pk)
-        lessons = Lesson.objects.filter(chapter=chapter)
+        lessons = Lesson.objects.filter(chapter=chapter).reverse()
         serializer = LessonModelSerializers(lessons, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
     
 
 
 class ChapterLessonDetailView(APIView):
+
+    # def get(self, request, chapter_id, lesson_id):
+    #     lesson = get_object_or_404(Lesson, id=lesson_id, chapter_id=chapter_id)
+    #     lesson_lists = LessonList.objects.filter(lesson=lesson)
+    #     serializer = LessonListModelSerializer(lesson_lists, many=True)
+    #     return Response(serializer.data, status=status.HTTP_200_OK)
+
     def get(self, request, chapter_id, lesson_id):
         lesson = get_object_or_404(Lesson, id=lesson_id, chapter_id=chapter_id)
-        serializer = LessonModelSerializers(lesson)
-        return Response(serializer.data, status=status.HTTP_200_OK)
+        step = int(request.query_params.get('step', 0))
+        
+        lesson_lists = LessonList.objects.filter(lesson=lesson).order_by('id')
+        
+        if step < 0 or step >= lesson_lists.count():
+            return Response({"detail": "Invalid step/index."}, status=status.HTTP_404_NOT_FOUND)
+    
+        current_lesson_list = lesson_lists[step]
+        serializer = LessonListModelSerializer(current_lesson_list)
+        
+        return Response({
+            "step": step,
+            "total": lesson_lists.count(),
+            "content": serializer.data
+        }, status=status.HTTP_200_OK)
 
-
+# for next step should call the url: http://127.0.0.1:8000/chapters/1/1/?step=1
     
 # -----------------------------------------------------Guides & Support section-------------------------------------
     
@@ -171,4 +200,13 @@ class GuideSupportDetailsView(APIView):
     def get(self, request, pk):
         guid = get_object_or_404(GuidesSupport, pk = pk)
         serializer = GuidesSupportModelSerializer(guid, many=False)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+    
+
+#----------------------------------------------User section-----------------------
+
+class UserEvaluationView(APIView):
+    def get(self, request, pk):
+        evaluation = UserEvaluation.objects.get(user = request.user)
+        serializer = UserEvaluationModelSerializer(evaluation)
         return Response(serializer.data, status=status.HTTP_200_OK)

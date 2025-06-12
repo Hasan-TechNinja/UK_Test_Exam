@@ -62,7 +62,7 @@ class Lesson(models.Model):
     status = models.BooleanField(default=False)
 
     def __str__(self):
-        return f"{self.title} --- {self.user.username}"
+        return self.name
     
     class Meta:
         ordering = ['-created']

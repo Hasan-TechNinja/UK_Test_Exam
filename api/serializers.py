@@ -3,6 +3,7 @@ from main.models import Chapter, Lesson, Question, Profile, GuidesSupport, UserE
 from django.contrib.auth.models import User
 
 class ChapterModelSerializer(serializers.ModelSerializer):
+    lessons = serializers.SerializerMethodField()
     class Meta:
         model = Chapter
         # fields = "__all__"
@@ -10,8 +11,14 @@ class ChapterModelSerializer(serializers.ModelSerializer):
 
     user = serializers.HiddenField(default=serializers.CurrentUserDefault())
 
+    def get_title(self, obj):
+        return f"Chapter {obj.id}"
+
+    def get_lessons(self, obj):
+        lesson_qs = obj.lesson_set.all().order_by('id')
+        return [f"{i+1}" for i, _ in enumerate(lesson_qs)]
+
     def create(self, validated_data):
-        # You can remove this if you're using HiddenField
         return super().create(validated_data)
     
 
