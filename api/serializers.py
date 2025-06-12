@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from main.models import Chapter, Lesson, Question, Profile, GuidesSupport
+from main.models import Chapter, Lesson, Question, Profile, GuidesSupport, UserEvaluation, HomePage, LessonList, GuideSupportList
 from django.contrib.auth.models import User
 
 class ChapterModelSerializer(serializers.ModelSerializer):
@@ -13,6 +13,7 @@ class ChapterModelSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         # You can remove this if you're using HiddenField
         return super().create(validated_data)
+    
 
 class LessonModelSerializers(serializers.ModelSerializer):
     user = serializers.HiddenField(default=serializers.CurrentUserDefault())
@@ -54,3 +55,33 @@ class GuidesSupportModelSerializer(serializers.ModelSerializer):
     class Meta:
         model = GuidesSupport
         exclude = ['status', 'created']
+
+
+
+class UserEvaluationModelSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = UserEvaluation
+        exclude = ['user']
+
+
+
+class HomePageModelSerializer(serializers.ModelSerializer):
+    class Meta:
+        model =HomePage
+        fields = "__all__"
+
+
+
+
+class LessonListModelSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = LessonList
+        fields = "__all__"
+
+
+
+
+class GuideSupportListModelSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = GuideSupportList
+        fields = "__all__"

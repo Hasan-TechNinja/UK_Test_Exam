@@ -1,7 +1,7 @@
 from django.shortcuts import render, get_object_or_404
 
-from main.models import Question, Lesson, Chapter, Profile, GuidesSupport
-from . serializers import LessonModelSerializers, QuestionModelSerializer, ChapterModelSerializer, RegisterSerializer, ProfileModelSerializer, GuidesSupportModelSerializer
+from main.models import Question, Lesson, Chapter, Profile, GuidesSupport, HomePage, GuideSupportList, LessonList
+from . serializers import LessonModelSerializers, QuestionModelSerializer, ChapterModelSerializer, RegisterSerializer, ProfileModelSerializer, GuidesSupportModelSerializer, HomePageModelSerializer, GuideSupportListModelSerializer, LessonListModelSerializer
 # from . permissions import IsAdminOrReadOnly
 
 from rest_framework.views import View, APIView
@@ -58,6 +58,13 @@ class ProfileView(generics.RetrieveUpdateAPIView):
     
 # --------------------------------------------------Admin Control---------------------------------------------
 
+class HomePageAdminView(generics.RetrieveUpdateDestroyAPIView, generics.CreateAPIView):
+    queryset = HomePage.objects.all()
+    serializer_class = HomePageModelSerializer
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAdminUser]
+
+
 class QuestionAdminView(generics.ListCreateAPIView, generics.RetrieveUpdateDestroyAPIView):
     queryset = Question.objects.all()
     serializer_class = QuestionModelSerializer
@@ -68,6 +75,13 @@ class QuestionAdminView(generics.ListCreateAPIView, generics.RetrieveUpdateDestr
 class LessonAdminView(generics.ListCreateAPIView):
     queryset = Lesson.objects.all()
     serializer_class = LessonModelSerializers
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAdminUser]
+    
+    
+class LessonListAdminView(generics.ListCreateAPIView):
+    queryset = LessonList.objects.all()
+    serializer_class = LessonListModelSerializer
     authentication_classes = [TokenAuthentication]
     permission_classes = [IsAdminUser]
 
@@ -81,6 +95,13 @@ class ChapterAdminView(generics.ListCreateAPIView):
 class GuideSupportAdminView(generics.ListCreateAPIView):
     queryset = GuidesSupport.objects.all()
     serializer_class = GuidesSupportModelSerializer
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAdminUser]
+
+
+class GuideSupportListAdminView(generics.CreateAPIView, generics.RetrieveUpdateDestroyAPIView):
+    queryset = GuideSupportList.objects.all()
+    serializer_class = GuideSupportListModelSerializer
     authentication_classes = [TokenAuthentication]
     permission_classes = [IsAdminUser]
 

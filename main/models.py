@@ -38,6 +38,9 @@ class HomePage(models.Model):
     description = models.TextField(max_length=200)
     image = models.ImageField(upload_to="home")
 
+    def __str__(self):
+        return self.title
+
 
 class Chapter(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='theory_categories')
