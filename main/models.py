@@ -7,20 +7,41 @@ from django.contrib.auth.models import User
 class Profile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='profile')
     full_name = models.CharField(max_length=100, default="Name")
-    app_language = models.CharField(max_length=20, default='en')
-    listening_language = models.CharField(max_length=20, default='en')
     image = models.ImageField(upload_to='profile_images/', null=True, blank=True)
-    font_size = models.CharField(max_length=10, choices=[('small', 'Small'), ('medium', 'Medium'), ('large', 'Large')], default='medium')
-    theme_mode = models.CharField(max_length=10, choices=[('light', 'Light'),('dark', 'Dark'),('system', 'System Default')], default='system')
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
         return f"{self.user.username}'s profile"
+    
+
+LeftMockTest = [
+    ('Limited', 'Limited'),
+    ('Unlimited', 'Unlimited'),
+]
+
+class UserEvaluation(models.Model):
+    user = models.ForeignKey(Profile, on_delete=models.CASCADE)
+    MockTestTaken = models.PositiveIntegerField(default=0)
+    LeftMockTest = models.CharField(max_length=20, choices=LeftMockTest, default='Limited')
+    PracticeCompleted = models.CharField(max_length=100)
+    QuestionAnswered = models.CharField(max_length=100)
+    CorrectAnswered = models.CharField(max_length=100)
+    WrongAnswered = models.CharField(max_length=100)
+
+    def __str__(self):
+        return f"Evaluation of {self.user.full_name}"
+    
+    
+
+class HomePage(models.Model):
+    title = models.CharField(max_length=100)
+    description = models.TextField(max_length=200)
+    image = models.ImageField(upload_to="home")
 
 
 class Chapter(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='theory_categories')
-    name = models.CharField(max_length=100)
+    name = models.CharField(max_length=100, default="")
     description = models.TextField(blank=True, null=True)
     created = models.DateTimeField(auto_now_add=True)
 
@@ -30,28 +51,35 @@ class Chapter(models.Model):
 
 class Lesson(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
+    name = models.CharField(max_length=100, default="")
     title = models.CharField(max_length=100)
-    description = models.CharField(max_length=150)
     chapter = models.ForeignKey(Chapter, on_delete=models.CASCADE, null=True)
-    theory = RichTextField()
-    audio = models.CharField(max_length=300, blank=True, null=True)
     created = models.DateTimeField(auto_now_add=True)
     updated = models.DateTimeField(auto_now=True)
+    status = models.BooleanField(default=False)
 
     def __str__(self):
         return f"{self.title} --- {self.user.username}"
     
     class Meta:
         ordering = ['-created']
-        # verbose_name = "Theory"
-        # verbose_name_plural = "Theories"
+
+
+class LessonList(models.Model):
+    lesson = models.ForeignKey(Lesson, on_delete=models.CASCADE)
+    image = models.ImageField(upload_to="lesson")
+    description = models.TextField()
+    video = models.URLField(blank=True, null=True)
+
+    def __str__(self):
+        return self.lesson.name
+
 
 
 class Question(models.Model):
     title = models.CharField(max_length=150)
     description = models.CharField(max_length=200, blank=True, null=True)
     option = models.JSONField()
-    audio = models.CharField(max_length=150, blank=True, null=True)
     image = models.ImageField(upload_to="question", blank=True, null=True)
 
     def __str__(self):
@@ -61,10 +89,17 @@ class Question(models.Model):
 class GuidesSupport(models.Model):
     name = models.CharField(max_length=150, default="")
     title = models.CharField(max_length=200)
-    image = models.ImageField(upload_to="GuidesAndSupport", blank=True, null=True)
-    description = RichTextField()
     status = models.BooleanField(default=False)
     created = models.DateField(auto_now_add=True)
 
     def __str__(self):
         return self.title
+    
+class GuideSupportList(models.Model):
+    guide = models.ForeignKey(GuidesSupport, on_delete=models.CASCADE)
+    image = models.ImageField(upload_to="GuidesAndSupport", blank=True, null=True)
+    video = models.URLField()
+    created = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return self.guide.name
