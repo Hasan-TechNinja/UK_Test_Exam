@@ -1,7 +1,7 @@
 from django.shortcuts import render, get_object_or_404
 
-from main.models import Question, Lesson, Chapter, Profile, GuidesSupport, HomePage, GuideSupportList, LessonList, UserEvaluation
-from . serializers import LessonModelSerializers, QuestionModelSerializer, ChapterModelSerializer, RegisterSerializer, ProfileModelSerializer, GuidesSupportModelSerializer, HomePageModelSerializer, GuideSupportListModelSerializer, LessonListModelSerializer, UserEvaluationModelSerializer
+from main.models import Question, Lesson, Chapter, Profile, GuidesSupport, HomePage, GuideSupportList, LessonContent, UserEvaluation
+from . serializers import LessonModelSerializers, QuestionModelSerializer, ChapterModelSerializer, RegisterSerializer, ProfileModelSerializer, GuidesSupportModelSerializer, HomePageModelSerializer, GuideSupportListModelSerializer, LessonContentModelSerializer, UserEvaluationModelSerializer
 # from . permissions import IsAdminOrReadOnly
 
 from rest_framework.views import View, APIView
@@ -79,9 +79,9 @@ class LessonAdminView(generics.ListCreateAPIView):
     permission_classes = [IsAdminUser]
     
     
-class LessonListAdminView(generics.ListCreateAPIView):
-    queryset = LessonList.objects.all()
-    serializer_class = LessonListModelSerializer
+class LessonContentAdminView(generics.ListCreateAPIView):
+    queryset = LessonContent.objects.all()
+    serializer_class = LessonContentModelSerializer
     authentication_classes = [TokenAuthentication]
     permission_classes = [IsAdminUser]
 
@@ -120,9 +120,9 @@ class LessonDetailsAdminView(generics.RetrieveUpdateDestroyAPIView):
     lookup_field = "pk"
 
 
-class LessonListAdminViewDetailsAdminView(generics.RetrieveUpdateDestroyAPIView):
-    queryset = LessonList
-    serializer_class = LessonListModelSerializer
+class LessonContentAdminViewDetailsAdminView(generics.RetrieveUpdateDestroyAPIView):
+    queryset = LessonContent
+    serializer_class = LessonContentModelSerializer
     authentication_classes = [TokenAuthentication]
     permission_classes = [IsAdminUser]
     lookup_field = "pk"
@@ -164,21 +164,21 @@ class ChapterLessonDetailView(APIView):
 
     # def get(self, request, chapter_id, lesson_id):
     #     lesson = get_object_or_404(Lesson, id=lesson_id, chapter_id=chapter_id)
-    #     lesson_lists = LessonList.objects.filter(lesson=lesson)
-    #     serializer = LessonListModelSerializer(lesson_lists, many=True)
+    #     lesson_lists = LessonContent.objects.filter(lesson=lesson)
+    #     serializer = LessonContentModelSerializer(lesson_lists, many=True)
     #     return Response(serializer.data, status=status.HTTP_200_OK)
 
     def get(self, request, chapter_id, lesson_id):
         lesson = get_object_or_404(Lesson, id=lesson_id, chapter_id=chapter_id)
         step = int(request.query_params.get('step', 0))
         
-        lesson_lists = LessonList.objects.filter(lesson=lesson).order_by('id')
+        lesson_lists = LessonContent.objects.filter(lesson=lesson).order_by('id')
         
         if step < 0 or step >= lesson_lists.count():
             return Response({"detail": "Invalid step/index."}, status=status.HTTP_404_NOT_FOUND)
     
         current_lesson_list = lesson_lists[step]
-        serializer = LessonListModelSerializer(current_lesson_list)
+        serializer = LessonContentModelSerializer(current_lesson_list)
         
         return Response({
             "step": step,

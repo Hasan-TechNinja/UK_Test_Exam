@@ -68,7 +68,7 @@ class Lesson(models.Model):
         ordering = ['-created']
 
 
-class LessonList(models.Model):
+class LessonContent(models.Model):
     lesson = models.ForeignKey(Lesson, on_delete=models.CASCADE)
     image = models.ImageField(upload_to="lesson")
     description = models.TextField()

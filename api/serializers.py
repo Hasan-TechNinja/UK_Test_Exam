@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from main.models import Chapter, Lesson, Question, Profile, GuidesSupport, UserEvaluation, HomePage, LessonList, GuideSupportList
+from main.models import Chapter, Lesson, Question, Profile, GuidesSupport, UserEvaluation, HomePage, LessonContent, GuideSupportList
 from django.contrib.auth.models import User
 
 class ChapterModelSerializer(serializers.ModelSerializer):
@@ -80,9 +80,9 @@ class HomePageModelSerializer(serializers.ModelSerializer):
 
 
 
-class LessonListModelSerializer(serializers.ModelSerializer):
+class LessonContentModelSerializer(serializers.ModelSerializer):
     class Meta:
-        model = LessonList
+        model = LessonContent
         fields = "__all__"
 
 
