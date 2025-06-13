@@ -7,6 +7,7 @@ urlpatterns = [
     path('lessonAdmin/', views.LessonAdminView.as_view(), name='lessonAdmin'),
     path('chapterAdmin/', views.ChapterAdminView.as_view(), name='chapterAdmin'),
     path('guideAdmin/', views.GuideSupportAdminView.as_view(), name='guideAdmin'),
+    path('homeAdmin/', views.HomePageAdminView.as_view(), name='homeAdmin'),
     
     #admin details view
     path('guideAdmin/<int:pk>', views.GuideSupportDetailsAdminView.as_view(), name='guideAdmin'),

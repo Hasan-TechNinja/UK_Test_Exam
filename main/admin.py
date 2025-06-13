@@ -29,7 +29,7 @@ admin.site.register(Lesson, LessonModelAdmin)
 
 class LessonContentModelAdmin(admin.ModelAdmin):
     list_display = (
-        'id', 'lesson', 'image', 'description', 'video'
+        'id', 'lesson', 'image', 'description', 'glossary', 'video'
     )
 admin.site.register(LessonContent, LessonContentModelAdmin)
 

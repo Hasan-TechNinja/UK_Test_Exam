@@ -72,6 +72,7 @@ class LessonContent(models.Model):
     lesson = models.ForeignKey(Lesson, on_delete=models.CASCADE)
     image = models.ImageField(upload_to="lesson")
     description = models.TextField()
+    glossary = models.TextField(max_length=200, default="")
     video = models.URLField(blank=True, null=True)
 
     def __str__(self):

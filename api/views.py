@@ -162,25 +162,41 @@ class ChapterLessonsView(APIView):
 
 class ChapterLessonDetailView(APIView):
     """
-    GET http://127.0.0.1:8000/chapters/1/1/?step=1
+    GET http://127.0.0.1:8000/chapters/1/1/?step=0
+    Each step returns 10 lesson contents
     """
     def get(self, request, chapter_id, lesson_id):
         lesson = get_object_or_404(Lesson, id=lesson_id, chapter_id=chapter_id)
-        step = int(request.query_params.get('step', 0))
-        
-        lesson_lists = LessonContent.objects.filter(lesson=lesson).order_by('id')
-        
-        if step < 0 or step >= lesson_lists.count():
-            return Response({"detail": "Invalid step/index."}, status=status.HTTP_404_NOT_FOUND)
-    
-        current_lesson_list = lesson_lists[step]
-        serializer = LessonContentModelSerializer(current_lesson_list)
-        
+
+        # Parse step (pagination)
+        try:
+            step = int(request.query_params.get('step', 0))
+        except (TypeError, ValueError):
+            return Response({"detail": "Invalid step value"}, status=status.HTTP_400_BAD_REQUEST)
+
+        PAGE_SIZE = 10
+        start_index = step * PAGE_SIZE
+        end_index = start_index + PAGE_SIZE
+
+        lesson_qs = LessonContent.objects.filter(lesson=lesson).order_by('id')
+        total = lesson_qs.count()
+
+        if start_index >= total:
+            return Response({"detail": "No content available for this page."}, status=status.HTTP_404_NOT_FOUND)
+
+        # Slice queryset for the current page
+        current_page_items = lesson_qs[start_index:end_index]
+        serializer = LessonContentModelSerializer(current_page_items, many=True)
+
         return Response({
             "step": step,
-            "total": lesson_lists.count(),
+            # "page_size": PAGE_SIZE,
+            "total_items": total,
+            # "has_next": end_index < total,
+            # "has_prev": start_index > 0,
             "content": serializer.data
         }, status=status.HTTP_200_OK)
+
 
     
 # -----------------------------------------------------Guides & Support section-------------------------------------
@@ -198,32 +214,34 @@ class GuideSupportView(APIView):
 class GuideSupportContentView(APIView):
     """
     GET http://127.0.0.1:8000/guide/1/?step=0
+    Returns 10 items per step (pagination)
     """
     def get(self, request, guide_id):
-        # Get the step index (default = 0)
         try:
             step = int(request.query_params.get("step", 0))
         except (TypeError, ValueError):
             return Response({"detail": "step must be an integer."}, status=status.HTTP_400_BAD_REQUEST)
 
-        # Get all contents for this guide
+        PAGE_SIZE = 10
+        start_index = step * PAGE_SIZE
+        end_index = start_index + PAGE_SIZE
+
+        # Get paginated contents
         contents = GuideSupportContent.objects.filter(guide_id=guide_id).order_by("id")
         total = contents.count()
 
-        if total == 0:
-            return Response({"detail": "No content for this guide."}, status=status.HTTP_404_NOT_FOUND)
+        if start_index >= total:
+            return Response({"detail": "No content available for this page."}, status=status.HTTP_404_NOT_FOUND)
 
-        if step < 0 or step >= total:
-            return Response({"detail": "Invalid step index."}, status=status.HTTP_404_NOT_FOUND)
-
-        current_content = contents[step]
-        serializer = GuideSupportContentModelSerializer(current_content)
+        current_items = contents[start_index:end_index]
+        serializer = GuideSupportContentModelSerializer(current_items, many=True)
 
         return Response({
-            "step": step,
-            "total": total,
-            "has_prev": step > 0,
-            "has_next": step < total - 1,
+            # "step": step,
+            # "page_size": PAGE_SIZE,
+            "total_items": total,
+            # "has_prev": start_index > 0,
+            # "has_next": end_index < total,
             "content": serializer.data
         }, status=status.HTTP_200_OK)
 
