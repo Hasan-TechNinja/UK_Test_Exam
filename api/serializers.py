@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from main.models import Chapter, Lesson, Question, Profile, GuidesSupport, UserEvaluation, HomePage, LessonContent, GuideSupportList
+from main.models import Chapter, Lesson, Question, Profile, GuidesSupport, UserEvaluation, HomePage, LessonContent, GuideSupportContent
 from django.contrib.auth.models import User
 
 class ChapterModelSerializer(serializers.ModelSerializer):
@@ -64,6 +64,13 @@ class GuidesSupportModelSerializer(serializers.ModelSerializer):
         exclude = ['status', 'created']
 
 
+class GuideSupportContentModelSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = GuideSupportContent
+        fields = ['id', 'image', 'description', 'video']
+
+
+
 
 class UserEvaluationModelSerializer(serializers.ModelSerializer):
     class Meta:
@@ -88,7 +95,7 @@ class LessonContentModelSerializer(serializers.ModelSerializer):
 
 
 
-class GuideSupportListModelSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = GuideSupportList
-        fields = "__all__"
+# class GuideSupportContentModelSerializer(serializers.ModelSerializer):
+#     class Meta:
+#         model = GuideSupportContent
+#         fields = "__all__"

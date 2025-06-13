@@ -1,7 +1,7 @@
 from django.shortcuts import render, get_object_or_404
 
-from main.models import Question, Lesson, Chapter, Profile, GuidesSupport, HomePage, GuideSupportList, LessonContent, UserEvaluation
-from . serializers import LessonModelSerializers, QuestionModelSerializer, ChapterModelSerializer, RegisterSerializer, ProfileModelSerializer, GuidesSupportModelSerializer, HomePageModelSerializer, GuideSupportListModelSerializer, LessonContentModelSerializer, UserEvaluationModelSerializer
+from main.models import Question, Lesson, Chapter, Profile, GuidesSupport, HomePage, GuideSupportContent, LessonContent, UserEvaluation
+from . serializers import LessonModelSerializers, QuestionModelSerializer, ChapterModelSerializer, RegisterSerializer, ProfileModelSerializer, GuidesSupportModelSerializer, HomePageModelSerializer, GuideSupportContentModelSerializer, LessonContentModelSerializer, UserEvaluationModelSerializer
 # from . permissions import IsAdminOrReadOnly
 
 from rest_framework.views import View, APIView
@@ -99,9 +99,9 @@ class GuideSupportAdminView(generics.ListCreateAPIView):
     permission_classes = [IsAdminUser]
 
 
-class GuideSupportListAdminView(generics.CreateAPIView, generics.RetrieveUpdateDestroyAPIView):
-    queryset = GuideSupportList.objects.all()
-    serializer_class = GuideSupportListModelSerializer
+class GuideSupportContentAdminView(generics.CreateAPIView, generics.RetrieveUpdateDestroyAPIView):
+    queryset = GuideSupportContent.objects.all()
+    serializer_class = GuideSupportContentModelSerializer
     authentication_classes = [TokenAuthentication]
     permission_classes = [IsAdminUser]
 
@@ -161,13 +161,9 @@ class ChapterLessonsView(APIView):
 
 
 class ChapterLessonDetailView(APIView):
-
-    # def get(self, request, chapter_id, lesson_id):
-    #     lesson = get_object_or_404(Lesson, id=lesson_id, chapter_id=chapter_id)
-    #     lesson_lists = LessonContent.objects.filter(lesson=lesson)
-    #     serializer = LessonContentModelSerializer(lesson_lists, many=True)
-    #     return Response(serializer.data, status=status.HTTP_200_OK)
-
+    """
+    GET http://127.0.0.1:8000/chapters/1/1/?step=1
+    """
     def get(self, request, chapter_id, lesson_id):
         lesson = get_object_or_404(Lesson, id=lesson_id, chapter_id=chapter_id)
         step = int(request.query_params.get('step', 0))
@@ -186,24 +182,53 @@ class ChapterLessonDetailView(APIView):
             "content": serializer.data
         }, status=status.HTTP_200_OK)
 
-# for next step should call the url: http://127.0.0.1:8000/chapters/1/1/?step=1
     
 # -----------------------------------------------------Guides & Support section-------------------------------------
     
 class GuideSupportView(APIView):
+    """
+    GET /api/guides/
+    """
     def get(self, request):
-        guid = GuidesSupport.objects.all()
-        serializer = GuidesSupportModelSerializer(guid, many=True)
+        guides = GuidesSupport.objects.all().order_by('id')
+        serializer = GuidesSupportModelSerializer(guides, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
-class GuideSupportDetailsView(APIView):
-    def get(self, request, pk):
-        guid = get_object_or_404(GuidesSupport, pk = pk)
-        serializer = GuidesSupportModelSerializer(guid, many=False)
-        return Response(serializer.data, status=status.HTTP_200_OK)
-    
 
-#----------------------------------------------User section-----------------------
+class GuideSupportContentView(APIView):
+    """
+    GET http://127.0.0.1:8000/guide/1/?step=0
+    """
+    def get(self, request, guide_id):
+        # Get the step index (default = 0)
+        try:
+            step = int(request.query_params.get("step", 0))
+        except (TypeError, ValueError):
+            return Response({"detail": "step must be an integer."}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Get all contents for this guide
+        contents = GuideSupportContent.objects.filter(guide_id=guide_id).order_by("id")
+        total = contents.count()
+
+        if total == 0:
+            return Response({"detail": "No content for this guide."}, status=status.HTTP_404_NOT_FOUND)
+
+        if step < 0 or step >= total:
+            return Response({"detail": "Invalid step index."}, status=status.HTTP_404_NOT_FOUND)
+
+        current_content = contents[step]
+        serializer = GuideSupportContentModelSerializer(current_content)
+
+        return Response({
+            "step": step,
+            "total": total,
+            "has_prev": step > 0,
+            "has_next": step < total - 1,
+            "content": serializer.data
+        }, status=status.HTTP_200_OK)
+
+
+#----------------------------------------------User profile section-----------------------
 
 class UserEvaluationView(APIView):
     def get(self, request, pk):

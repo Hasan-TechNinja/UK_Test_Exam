@@ -82,7 +82,8 @@ class LessonContent(models.Model):
 class Question(models.Model):
     title = models.CharField(max_length=150)
     description = models.CharField(max_length=200, blank=True, null=True)
-    option = models.JSONField()
+    chapter = models.ForeignKey(Chapter, on_delete=models.CASCADE, blank=True, null=True)
+    options = models.JSONField(default=" ")
     image = models.ImageField(upload_to="question", blank=True, null=True)
 
     def __str__(self):
@@ -93,16 +94,17 @@ class GuidesSupport(models.Model):
     name = models.CharField(max_length=150, default="")
     title = models.CharField(max_length=200)
     status = models.BooleanField(default=False)
-    created = models.DateField(auto_now_add=True)
+    created = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
         return self.title
     
-class GuideSupportList(models.Model):
+class GuideSupportContent(models.Model):
     guide = models.ForeignKey(GuidesSupport, on_delete=models.CASCADE)
     image = models.ImageField(upload_to="GuidesAndSupport", blank=True, null=True)
-    video = models.URLField()
-    created = models.DateTimeField(auto_now_add=True)
+    description = models.TextField(default=" ")
+    video = models.URLField(blank=True)
+    created = models.DateTimeField(auto_now=True)
 
     def __str__(self):
         return self.guide.name

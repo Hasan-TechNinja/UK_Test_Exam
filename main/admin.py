@@ -1,5 +1,5 @@
 from django.contrib import admin
-from . models import Chapter, Lesson, Question, Profile, GuidesSupport, GuideSupportList, LessonContent, HomePage
+from . models import Chapter, Lesson, Question, Profile, GuidesSupport, GuideSupportContent, LessonContent, HomePage
 from rest_framework.authtoken.models import Token
 
 # Register your models here.
@@ -37,7 +37,7 @@ admin.site.register(LessonContent, LessonContentModelAdmin)
 
 class QuestionModelAdmin(admin.ModelAdmin):
     list_display = (
-        'id', 'title', 'description', 'option', 'image'
+        'id', 'title', 'description', 'chapter', 'options', 'image'
     )
 admin.site.register(Question, QuestionModelAdmin)
 
@@ -58,8 +58,8 @@ class GuidesSupportModelAdmin(admin.ModelAdmin):
 admin.site.register(GuidesSupport, GuidesSupportModelAdmin)
 
 
-class GuideSupportListModelAdmin(admin.ModelAdmin):
+class GuideSupportContentModelAdmin(admin.ModelAdmin):
     list_display = (
-        'id', 'guide', 'image', 'video', 'created'
+        'id', 'guide', 'image', 'description', 'video', 'created'
     )
-admin.site.register(GuideSupportList, GuideSupportListModelAdmin)
+admin.site.register(GuideSupportContent, GuideSupportContentModelAdmin)
