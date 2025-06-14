@@ -20,8 +20,9 @@ urlpatterns = [
     
     #admin details view
     path('guideAdmin/<int:pk>', views.GuideSupportDetailsAdminView.as_view(), name='guideAdmin'),
+    path('lessonAdmin/<int:pk>', views.LessonContentDetailsAdminView.as_view(), name='lessonAdmin'),
     path('chapterAdmin/<int:pk>', views.ChapterDetailsAdminView.as_view(), name='chapterAdmin'),
-    path('lessonAdmin/<int:pk>', views.LessonDetailsAdminView.as_view(), name='lessonAdmin'),
+    path('guideAdmin/<int:pk>', views.GuideSupportContentDetailsAdminView.as_view(), name='guideAdmin'),
     path('questionAdmin/<int:pk>', views.QuestionDetailsAdminView.as_view(), name='questionAdmin'),
 
     # authentication
@@ -31,9 +32,11 @@ urlpatterns = [
     path('profile/', views.ProfileView.as_view(), name='profile'),
 
     # user 
+    path('home/', views.HomePageView.as_view(), name="home"),
     path('chapters/', views.ChapterListView.as_view(), name="chapters"),
     path('chapters/<int:pk>', views.ChapterLessonsView.as_view(), name="chapters"),
     path('chapters/<int:chapter_id>/<int:lesson_id>/', views.ChapterLessonDetailView.as_view(), name="chapter-lesson-detail"),
     path('guide/', views.GuideSupportView.as_view(), name='guid'),
     path('guide/<int:guide_id>/', views.GuideSupportContentView.as_view(), name='guideDetails'),
+
 ]

@@ -82,8 +82,8 @@ class UserEvaluationModelSerializer(serializers.ModelSerializer):
 
 class HomePageModelSerializer(serializers.ModelSerializer):
     class Meta:
-        model =HomePage
-        fields = "__all__"
+        model = HomePage
+        fields = ['title', 'description', 'image']
 
 
 

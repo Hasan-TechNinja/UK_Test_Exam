@@ -1,20 +1,24 @@
 from django.shortcuts import render, get_object_or_404
+from django.db import transaction
+from django.utils import timezone
+from django.contrib.auth import authenticate
+from datetime import timedelta
 
 from main.models import Question, Lesson, Chapter, Profile, GuidesSupport, HomePage, GuideSupportContent, LessonContent, UserEvaluation
-from . serializers import LessonModelSerializers, QuestionModelSerializer, ChapterModelSerializer, RegisterSerializer, ProfileModelSerializer, GuidesSupportModelSerializer, HomePageModelSerializer, GuideSupportContentModelSerializer, LessonContentModelSerializer, UserEvaluationModelSerializer
+from subscriptions.models import SubscriptionPlan, UserSubscription
+from . serializers import LessonModelSerializers, QuestionModelSerializer, ChapterModelSerializer, RegisterSerializer, ProfileModelSerializer, GuidesSupportModelSerializer, HomePageModelSerializer, GuideSupportContentModelSerializer, LessonContentModelSerializer, UserEvaluationModelSerializer, SubscriptionPlanSerializer, UserSubscriptionSerializer
 # from . permissions import IsAdminOrReadOnly
 
 from rest_framework.views import View, APIView
 from rest_framework import mixins, generics, status, viewsets
 from rest_framework.response import Response
-
 from rest_framework.authtoken.models import Token
-from rest_framework.permissions import IsAuthenticated, IsAdminUser
+from rest_framework.permissions import IsAuthenticated, IsAdminUser, AllowAny
 from rest_framework.authentication import TokenAuthentication
 from rest_framework.decorators import api_view, authentication_classes, permission_classes
-from django.contrib.auth import authenticate
+from rest_framework.decorators import action
 
-# # Create your views here.
+#  Create your views here.
 
 
 # -----------------------------------------------Authentication section----------------------------------
@@ -65,7 +69,7 @@ class HomePageAdminView(generics.RetrieveUpdateDestroyAPIView, generics.CreateAP
     permission_classes = [IsAdminUser]
 
 
-class QuestionAdminView(generics.ListCreateAPIView, generics.RetrieveUpdateDestroyAPIView):
+class QuestionAdminView(generics.ListCreateAPIView):
     queryset = Question.objects.all()
     serializer_class = QuestionModelSerializer
     authentication_classes = [TokenAuthentication]
@@ -99,7 +103,7 @@ class GuideSupportAdminView(generics.ListCreateAPIView):
     permission_classes = [IsAdminUser]
 
 
-class GuideSupportContentAdminView(generics.CreateAPIView, generics.RetrieveUpdateDestroyAPIView):
+class GuideSupportContentAdminView(generics.ListCreateAPIView):
     queryset = GuideSupportContent.objects.all()
     serializer_class = GuideSupportContentModelSerializer
     authentication_classes = [TokenAuthentication]
@@ -120,7 +124,7 @@ class LessonDetailsAdminView(generics.RetrieveUpdateDestroyAPIView):
     lookup_field = "pk"
 
 
-class LessonContentAdminViewDetailsAdminView(generics.RetrieveUpdateDestroyAPIView):
+class LessonContentDetailsAdminView(generics.RetrieveUpdateDestroyAPIView):
     queryset = LessonContent
     serializer_class = LessonContentModelSerializer
     authentication_classes = [TokenAuthentication]
@@ -142,13 +146,26 @@ class GuideSupportDetailsAdminView(generics.RetrieveUpdateDestroyAPIView):
     permission_classes = [IsAdminUser]
     lookup_field = "pk"
 
+class GuideSupportContentDetailsAdminView(generics.RetrieveUpdateDestroyAPIView):
+    queryset = GuidesSupport.objects.all()
+    serializer_class = GuidesSupportModelSerializer
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAdminUser]
+    lookup_field = "pk"
 
 # --------------------------------------------------------Study section--------------------------------------
+
+class HomePageView(APIView):
+    def get(self, request):
+        home = HomePage.objects.all()
+        serializer = HomePageModelSerializer(home, many = True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
 class ChapterListView(APIView):
     def get(self, request):
         chapters = Chapter.objects.all().order_by('id')
         serializer = ChapterModelSerializer(chapters, many=True)
-        return Response(serializer.data, status=status.HTTP_200_OK)
+        return Response(serializer.data, status=status.HTTP_200_OK) 
     
 
 class ChapterLessonsView(APIView):
@@ -257,23 +274,8 @@ class UserEvaluationView(APIView):
 
 
 
-
-
 # -----------------------------------Subscription----------------
 
-
-
-# subscriptions/views.py
-from rest_framework import viewsets, status
-from rest_framework.decorators import action
-from rest_framework.response import Response
-from rest_framework.permissions import IsAuthenticated, AllowAny
-from django.utils import timezone
-from datetime import timedelta
-from django.db import transaction
-
-from subscriptions.models import SubscriptionPlan, UserSubscription
-from .serializers import SubscriptionPlanSerializer, UserSubscriptionSerializer
 
 class SubscriptionPlanViewSet(viewsets.ReadOnlyModelViewSet):
     """
@@ -328,9 +330,6 @@ class UserSubscriptionViewSet(viewsets.GenericViewSet):
         except SubscriptionPlan.DoesNotExist:
             return Response({"error": "Subscription plan not found."}, status=status.HTTP_404_NOT_FOUND)
 
-        # In a real application, this is where you'd process payment.
-        # For this tutorial, we'll assume payment is successful.
-        # You'd typically get a payment confirmation from Stripe/PayPal etc.
 
         with transaction.atomic(): # Ensure atomicity of database operations
             user_subscription, created = UserSubscription.objects.get_or_create(user=request.user)
@@ -371,7 +370,3 @@ class UserSubscriptionViewSet(viewsets.GenericViewSet):
         except UserSubscription.DoesNotExist:
             return Response({"message": "No active subscription found to cancel."},
                             status=status.HTTP_404_NOT_FOUND)
-
-    # You might also add a 'renew' action for recurring payments,
-    # though 'subscribe' can often handle renewals if designed carefully.
-    # For now, 'subscribe' will act as both initial subscription and upgrade/downgrade.
