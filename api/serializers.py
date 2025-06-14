@@ -1,5 +1,6 @@
 from rest_framework import serializers
 from main.models import Chapter, Lesson, Question, Profile, GuidesSupport, UserEvaluation, HomePage, LessonContent, GuideSupportContent
+from subscriptions.models import SubscriptionPlan, UserSubscription
 from django.contrib.auth.models import User
 
 class ChapterModelSerializer(serializers.ModelSerializer):
@@ -99,3 +100,41 @@ class LessonContentModelSerializer(serializers.ModelSerializer):
 #     class Meta:
 #         model = GuideSupportContent
 #         fields = "__all__"
+
+
+
+
+
+
+class UserSerializer(serializers.ModelSerializer):
+    """
+    Serializer for the User model (basic details).
+    """
+    class Meta:
+        model = User
+        fields = ['id', 'username', 'email']
+
+class SubscriptionPlanSerializer(serializers.ModelSerializer):
+    """
+    Serializer for the SubscriptionPlan model.
+    """
+    name_display = serializers.CharField(source='get_name_display', read_only=True)
+
+    class Meta:
+        model = SubscriptionPlan
+        fields = ['id', 'name', 'name_display', 'price', 'duration_days', 'features']
+
+class UserSubscriptionSerializer(serializers.ModelSerializer):
+    """
+    Serializer for the UserSubscription model.
+    Includes nested SubscriptionPlan details and user info.
+    """
+    plan = SubscriptionPlanSerializer(read_only=True) # Nested serializer for plan details
+    user = UserSerializer(read_only=True) # Nested serializer for user details
+    is_currently_active = serializers.BooleanField(read_only=True) # Read-only property
+
+    class Meta:
+        model = UserSubscription
+        fields = ['id', 'user', 'plan', 'start_date', 'end_date', 'is_active', 'last_renewed', 'is_currently_active']
+        read_only_fields = ['user', 'start_date', 'end_date', 'is_active', 'last_renewed'] # These are set by logic
+

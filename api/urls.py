@@ -1,7 +1,16 @@
-from django.urls import path
+from django.urls import path, include
 from . import views
+from rest_framework.routers import DefaultRouter
+
+
+router = DefaultRouter()
+router.register(r'subscription-plans', views.SubscriptionPlanViewSet)
+router.register(r'user-subscriptions', views.UserSubscriptionViewSet, basename='user-subscription')
+
 
 urlpatterns = [
+    path('', include(router.urls)),
+
     # admin
     path('questionAdmin/', views.QuestionAdminView.as_view(), name='theoryAdmin'),
     path('lessonAdmin/', views.LessonAdminView.as_view(), name='lessonAdmin'),

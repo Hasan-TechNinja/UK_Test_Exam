@@ -253,3 +253,125 @@ class UserEvaluationView(APIView):
         evaluation = UserEvaluation.objects.get(user = request.user)
         serializer = UserEvaluationModelSerializer(evaluation)
         return Response(serializer.data, status=status.HTTP_200_OK)
+    
+
+
+
+
+
+# -----------------------------------Subscription----------------
+
+
+
+# subscriptions/views.py
+from rest_framework import viewsets, status
+from rest_framework.decorators import action
+from rest_framework.response import Response
+from rest_framework.permissions import IsAuthenticated, AllowAny
+from django.utils import timezone
+from datetime import timedelta
+from django.db import transaction
+
+from subscriptions.models import SubscriptionPlan, UserSubscription
+from .serializers import SubscriptionPlanSerializer, UserSubscriptionSerializer
+
+class SubscriptionPlanViewSet(viewsets.ReadOnlyModelViewSet):
+    """
+    API endpoint that allows subscription plans to be viewed.
+    Accessible to anyone.
+    """
+    queryset = SubscriptionPlan.objects.all().order_by('price')
+    serializer_class = SubscriptionPlanSerializer
+    permission_classes = [AllowAny] # Anyone can see the available plans
+
+class UserSubscriptionViewSet(viewsets.GenericViewSet):
+    """
+    API endpoint for managing user subscriptions.
+    Requires authentication.
+    """
+    queryset = UserSubscription.objects.all()
+    serializer_class = UserSubscriptionSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        """
+        Ensure users can only see/manage their own subscriptions.
+        """
+        return self.queryset.filter(user=self.request.user)
+
+    @action(detail=False, methods=['get'])
+    def current(self, request):
+        """
+        Retrieves the current user's subscription status.
+        """
+        try:
+            user_subscription = self.get_queryset().get() # Should be OneToOne, so get() works
+            serializer = self.get_serializer(user_subscription)
+            return Response(serializer.data)
+        except UserSubscription.DoesNotExist:
+            return Response({"message": "No active subscription found for this user."},
+                            status=status.HTTP_404_NOT_FOUND)
+
+    @action(detail=False, methods=['post'])
+    def subscribe(self, request):
+        """
+        Allows a user to subscribe to a specific plan.
+        This endpoint would typically integrate with a payment gateway.
+        For this tutorial, we'll simulate a successful payment.
+        """
+        plan_id = request.data.get('plan_id')
+        if not plan_id:
+            return Response({"error": "Plan ID is required."}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            plan = SubscriptionPlan.objects.get(id=plan_id)
+        except SubscriptionPlan.DoesNotExist:
+            return Response({"error": "Subscription plan not found."}, status=status.HTTP_404_NOT_FOUND)
+
+        # In a real application, this is where you'd process payment.
+        # For this tutorial, we'll assume payment is successful.
+        # You'd typically get a payment confirmation from Stripe/PayPal etc.
+
+        with transaction.atomic(): # Ensure atomicity of database operations
+            user_subscription, created = UserSubscription.objects.get_or_create(user=request.user)
+
+            # Update subscription details
+            user_subscription.plan = plan
+            user_subscription.is_active = True
+            user_subscription.start_date = timezone.now() # Reset start date for new subscription/renewal
+            user_subscription.last_renewed = timezone.now()
+
+            # Calculate end_date based on plan duration
+            if plan.duration_days:
+                user_subscription.end_date = user_subscription.start_date + timedelta(days=plan.duration_days)
+            else:
+                user_subscription.end_date = None # Lifetime access
+
+            user_subscription.save()
+
+            serializer = self.get_serializer(user_subscription)
+            return Response(serializer.data, status=status.HTTP_200_OK if not created else status.HTTP_201_CREATED)
+
+    @action(detail=False, methods=['post'])
+    def cancel(self, request):
+        """
+        Allows a user to cancel their active subscription.
+        Does not refund, just deactivates the subscription.
+        """
+        try:
+            user_subscription = self.get_queryset().get()
+            if not user_subscription.is_active:
+                return Response({"message": "Subscription is already inactive."},
+                                status=status.HTTP_400_BAD_REQUEST)
+
+            user_subscription.is_active = False
+            user_subscription.save()
+            serializer = self.get_serializer(user_subscription)
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        except UserSubscription.DoesNotExist:
+            return Response({"message": "No active subscription found to cancel."},
+                            status=status.HTTP_404_NOT_FOUND)
+
+    # You might also add a 'renew' action for recurring payments,
+    # though 'subscribe' can often handle renewals if designed carefully.
+    # For now, 'subscribe' will act as both initial subscription and upgrade/downgrade.
