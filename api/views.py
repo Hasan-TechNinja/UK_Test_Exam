@@ -109,7 +109,15 @@ class GuideSupportContentAdminView(generics.ListCreateAPIView):
     authentication_classes = [TokenAuthentication]
     permission_classes = [IsAdminUser]
 
-# --------------------------------------------------Admin details view--------------------------------------
+
+class SubscriptionPlanAdminView(generics.ListCreateAPIView):
+    queryset = SubscriptionPlan
+    serializer_class = SubscriptionPlanSerializer
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAdminUser]
+
+
+# --------------------------------------------------Admin details view--------------------------------------s
 class QuestionDetailsAdminView(generics.RetrieveUpdateDestroyAPIView):
     queryset = Question.objects.all()
     serializer_class = QuestionModelSerializer
@@ -149,6 +157,13 @@ class GuideSupportDetailsAdminView(generics.RetrieveUpdateDestroyAPIView):
 class GuideSupportContentDetailsAdminView(generics.RetrieveUpdateDestroyAPIView):
     queryset = GuidesSupport.objects.all()
     serializer_class = GuidesSupportModelSerializer
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAdminUser]
+    lookup_field = "pk"
+
+class SubscriptionPlanDetailsAdminView(generics.RetrieveUpdateDestroyAPIView):
+    queryset = SubscriptionPlan
+    serializer_class = SubscriptionPlanSerializer
     authentication_classes = [TokenAuthentication]
     permission_classes = [IsAdminUser]
     lookup_field = "pk"

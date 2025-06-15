@@ -17,6 +17,7 @@ urlpatterns = [
     path('chapterAdmin/', views.ChapterAdminView.as_view(), name='chapterAdmin'),
     path('guideAdmin/', views.GuideSupportAdminView.as_view(), name='guideAdmin'),
     path('homeAdmin/', views.HomePageAdminView.as_view(), name='homeAdmin'),
+    path('subscriptionPlan/', views.SubscriptionPlanAdminView.as_view(), name = 'subscriptionPlan'),
     
     #admin details view
     path('guideAdmin/<int:pk>', views.GuideSupportDetailsAdminView.as_view(), name='guideAdmin'),
@@ -24,6 +25,7 @@ urlpatterns = [
     path('chapterAdmin/<int:pk>', views.ChapterDetailsAdminView.as_view(), name='chapterAdmin'),
     path('guideAdmin/<int:pk>', views.GuideSupportContentDetailsAdminView.as_view(), name='guideAdmin'),
     path('questionAdmin/<int:pk>', views.QuestionDetailsAdminView.as_view(), name='questionAdmin'),
+    path('subscriptionPlan/<int:pk>', views.SubscriptionPlanAdminView.as_view(), name = 'subscriptionPlan'),
 
     # authentication
     path('register/', views.RegisterView.as_view(), name='registration'),
