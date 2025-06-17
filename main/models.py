@@ -109,3 +109,23 @@ class GuideSupportContent(models.Model):
 
     def __str__(self):
         return self.guide.name
+    
+
+class PracticeQuestion(models.Model):
+    chapter = models.ForeignKey(Chapter, on_delete=models.CASCADE, related_name='questions')
+    question_text = models.TextField()
+    explanation = models.TextField(blank=True, null=True)
+    image = models.ImageField(upload_to='questions/', blank=True, null=True)
+    multiple_answers = models.BooleanField(default=False)  # For questions with multiple correct answers
+
+    def __str__(self):
+        return self.question_text
+    
+
+class PracticeOption(models.Model):
+    question = models.ForeignKey(PracticeQuestion, on_delete=models.CASCADE, related_name='options')
+    text = models.CharField(max_length=255)
+    is_correct = models.BooleanField(default=False)
+
+    def __str__(self):
+        return self.text

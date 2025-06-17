@@ -4,9 +4,9 @@ from django.utils import timezone
 from django.contrib.auth import authenticate
 from datetime import timedelta
 
-from main.models import Question, Lesson, Chapter, Profile, GuidesSupport, HomePage, GuideSupportContent, LessonContent, UserEvaluation
+from main.models import Question, Lesson, Chapter, Profile, GuidesSupport, HomePage, GuideSupportContent, LessonContent, UserEvaluation, PracticeQuestion, PracticeOption
 from subscriptions.models import SubscriptionPlan, UserSubscription
-from . serializers import LessonModelSerializers, QuestionModelSerializer, ChapterModelSerializer, RegisterSerializer, ProfileModelSerializer, GuidesSupportModelSerializer, HomePageModelSerializer, GuideSupportContentModelSerializer, LessonContentModelSerializer, UserEvaluationModelSerializer, SubscriptionPlanSerializer, UserSubscriptionSerializer
+from . serializers import LessonModelSerializers, QuestionModelSerializer, ChapterModelSerializer, RegisterSerializer, ProfileModelSerializer, GuidesSupportModelSerializer, HomePageModelSerializer, GuideSupportContentModelSerializer, LessonContentModelSerializer, UserEvaluationModelSerializer, SubscriptionPlanSerializer, UserSubscriptionSerializer, PracticeOptionSerializer, PracticeQuestionSerializer
 # from . permissions import IsAdminOrReadOnly
 
 from rest_framework.views import View, APIView
@@ -62,7 +62,7 @@ class ProfileView(generics.RetrieveUpdateAPIView):
     
 # --------------------------------------------------Admin Control---------------------------------------------
 
-class HomePageAdminView(generics.RetrieveUpdateDestroyAPIView, generics.CreateAPIView):
+class HomePageAdminView(generics.ListCreateAPIView):
     queryset = HomePage.objects.all()
     serializer_class = HomePageModelSerializer
     authentication_classes = [TokenAuthentication]
@@ -93,6 +93,7 @@ class LessonContentAdminView(generics.ListCreateAPIView):
 class ChapterAdminView(generics.ListCreateAPIView):
     queryset = Chapter.objects.all()
     serializer_class = ChapterModelSerializer
+    authentication_classes = [TokenAuthentication]
     permission_classes = [IsAdminUser]
 
 
@@ -111,13 +112,21 @@ class GuideSupportContentAdminView(generics.ListCreateAPIView):
 
 
 class SubscriptionPlanAdminView(generics.ListCreateAPIView):
-    queryset = SubscriptionPlan
+    queryset = SubscriptionPlan.objects.all()
     serializer_class = SubscriptionPlanSerializer
     authentication_classes = [TokenAuthentication]
     permission_classes = [IsAdminUser]
 
 
 # --------------------------------------------------Admin details view--------------------------------------s
+
+class HomePageDetailsAdminView(generics.RetrieveUpdateDestroyAPIView):
+    queryset = HomePage.objects.all()
+    serializer_class = HomePageModelSerializer
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAdminUser]
+    lookup_field = "pk"
+
 class QuestionDetailsAdminView(generics.RetrieveUpdateDestroyAPIView):
     queryset = Question.objects.all()
     serializer_class = QuestionModelSerializer
@@ -162,7 +171,7 @@ class GuideSupportContentDetailsAdminView(generics.RetrieveUpdateDestroyAPIView)
     lookup_field = "pk"
 
 class SubscriptionPlanDetailsAdminView(generics.RetrieveUpdateDestroyAPIView):
-    queryset = SubscriptionPlan
+    queryset = SubscriptionPlan.objects.all()
     serializer_class = SubscriptionPlanSerializer
     authentication_classes = [TokenAuthentication]
     permission_classes = [IsAdminUser]
@@ -385,3 +394,172 @@ class UserSubscriptionViewSet(viewsets.GenericViewSet):
         except UserSubscription.DoesNotExist:
             return Response({"message": "No active subscription found to cancel."},
                             status=status.HTTP_404_NOT_FOUND)
+
+
+
+#-------------------------------------Practice Chapter view-------------------------------------
+
+'''
+class PracticeChapterList(APIView):
+    def get(self, request):
+        chapters = Chapter.objects.all()
+        serializer = ChapterModelSerializer(chapters, many=True)
+        return Response(serializer.data)
+
+
+class ChapterQuestionList(APIView):
+    def get(self, request, chapter_id):
+        questions = PracticeQuestion.objects.filter(chapter_id=chapter_id).prefetch_related('options')
+        serializer = PracticeQuestionSerializer(questions, many=True)
+        return Response(serializer.data)
+
+
+class SubmitAnswers(APIView):
+    """
+    POST {
+        "answers": [
+            {"question_id": 1, "selected_options": [3]},
+            {"question_id": 2, "selected_options": [4, 6]}
+        ]
+    }
+    """
+    def post(self, request):
+        answers = request.data.get('answers', [])
+        total = len(answers)
+        correct_count = 0
+        results = []
+
+        for ans in answers:
+            qid = ans.get('question_id')
+            selected = set(ans.get('selected_options', []))
+
+            try:
+                question = PracticeQuestion.objects.get(id=qid)
+            except PracticeQuestion.DoesNotExist:
+                continue
+
+            correct = set(question.options.filter(is_correct=True).values_list('id', flat=True))
+            is_correct = selected == correct
+
+            if is_correct:
+                correct_count += 1
+
+            results.append({
+                "question_id": qid,
+                "is_correct": is_correct,
+                "correct_options": list(correct),
+                "selected_options": list(selected),
+                "explanation": question.explanation,
+            })
+
+        return Response({
+            "total": total,
+            "correct": correct_count,
+            "wrong": total - correct_count,
+            "score": int((correct_count / total) * 100) if total else 0,
+            "results": results
+        })
+'''
+
+
+
+
+
+PAGE_SIZE = 1
+
+class QuestionStepView(APIView):
+    """
+    GET /practice/chapters/<chapter_id>/question/?step=0
+    Returns exactly one question (index = step)
+    """
+    def get(self, request, chapter_id):
+        try:
+            step = int(request.query_params.get("step", 0))
+        except (TypeError, ValueError):
+            return Response({"detail": "step must be an integer."},
+                            status=status.HTTP_400_BAD_REQUEST)
+
+        qs     = PracticeQuestion.objects.filter(chapter_id=chapter_id).order_by("id")
+        total  = qs.count()
+
+        if step < 0 or step >= total:
+            return Response({"detail": "Invalid step index."},
+                            status=status.HTTP_404_NOT_FOUND)
+
+        question = qs[step]
+        data     = PracticeQuestionSerializer(question).data
+        return Response({
+            "step":   step,
+            "total":  total,
+            "has_prev": step > 0,
+            "has_next": step < total - 1,
+            "question": data
+        })
+
+
+class SubmitAnswerView(APIView):
+    """
+    POST /practice/answer/
+    {
+        "chapter_id": 1,
+        "step": 0,
+        "question_id": 15,
+        "selected_options": [42]
+    }
+    Returns next question OR final result if finished.
+    """
+    def post(self, request):
+        chapter_id       = request.data.get("chapter_id")
+        step             = int(request.data.get("step", 0))
+        question_id      = request.data.get("question_id")
+        selected_options = set(request.data.get("selected_options", []))
+
+        # Validate question
+        try:
+            question = PracticeQuestion.objects.get(id=question_id, chapter_id=chapter_id)
+        except PracticeQuestion.DoesNotExist:
+            return Response({"detail": "Invalid question."}, status=status.HTTP_400_BAD_REQUEST)
+
+        correct_set = set(question.options.filter(is_correct=True).values_list('id', flat=True))
+        is_correct  = selected_options == correct_set
+
+        # ----- you can persist attempt here if you wish -----
+
+        # Prepare result for this question
+        question_result = {
+            "question_id": question_id,
+            "is_correct":  is_correct,
+            "correct_options": list(correct_set),
+            "selected_options": list(selected_options),
+            "explanation": question.explanation,
+        }
+
+        # Determine next step
+        qs    = PracticeQuestion.objects.filter(chapter_id=chapter_id).order_by("id")
+        total = qs.count()
+        next_step = step + 1
+
+        if next_step >= total:
+            # last question answered – return summary
+            # NOTE: Ideally accumulate answers in session/db to compute score.
+            # For demo, we send only current result and flag completion.
+            return Response({
+                "completed": True,
+                "question_result": question_result,
+            }, status=status.HTTP_200_OK)
+
+        # Otherwise send the next question
+        next_q   = qs[next_step]
+        next_ser = PracticeQuestionSerializer(next_q)
+
+        return Response({
+            "completed": False,
+            "question_result": question_result,
+            "next_question": {
+                "step": next_step,
+                "total": total,
+                "question": next_ser.data,
+                "has_next": next_step < total - 1,
+                "has_prev": True
+            }
+        }, status=status.HTTP_200_OK)

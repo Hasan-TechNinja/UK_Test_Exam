@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from main.models import Chapter, Lesson, Question, Profile, GuidesSupport, UserEvaluation, HomePage, LessonContent, GuideSupportContent
+from main.models import Chapter, Lesson, Question, Profile, GuidesSupport, UserEvaluation, HomePage, LessonContent, GuideSupportContent, PracticeOption, PracticeQuestion
 from subscriptions.models import SubscriptionPlan, UserSubscription
 from django.contrib.auth.models import User
 
@@ -95,12 +95,16 @@ class LessonContentModelSerializer(serializers.ModelSerializer):
 
 
 
+class PracticeOptionSerializer(serializers.ModelSerializer):
+    class Meta:
+        model  = PracticeOption
+        fields = ['text']
 
-# class GuideSupportContentModelSerializer(serializers.ModelSerializer):
-#     class Meta:
-#         model = GuideSupportContent
-#         fields = "__all__"
-
+class PracticeQuestionSerializer(serializers.ModelSerializer):
+    options = PracticeOptionSerializer(many=True, read_only=True)
+    class Meta:
+        model  = PracticeQuestion
+        fields = ['id', 'question_text', 'image', 'multiple_answers', 'options']
 
 
 
@@ -136,5 +140,5 @@ class UserSubscriptionSerializer(serializers.ModelSerializer):
     class Meta:
         model = UserSubscription
         fields = ['id', 'user', 'plan', 'start_date', 'end_date', 'is_active', 'last_renewed', 'is_currently_active']
-        read_only_fields = ['user', 'start_date', 'end_date', 'is_active', 'last_renewed'] # These are set by logic
+        read_only_fields = ['user', 'start_date', 'end_date', 'is_active', 'last_renewed']
 

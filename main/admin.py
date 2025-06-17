@@ -1,5 +1,5 @@
 from django.contrib import admin
-from . models import Chapter, Lesson, Question, Profile, GuidesSupport, GuideSupportContent, LessonContent, HomePage
+from . models import Chapter, Lesson, Question, Profile, GuidesSupport, GuideSupportContent, LessonContent, HomePage, PracticeOption, PracticeQuestion
 from rest_framework.authtoken.models import Token
 
 # Register your models here.
@@ -63,3 +63,19 @@ class GuideSupportContentModelAdmin(admin.ModelAdmin):
         'id', 'guide', 'image', 'description', 'video', 'created'
     )
 admin.site.register(GuideSupportContent, GuideSupportContentModelAdmin)
+
+
+
+class PracticeOptionAdmin(admin.ModelAdmin):
+    list_display = (
+        'id', 'question', 'text', 'is_correct'
+    )
+admin.site.register(PracticeOption, PracticeOptionAdmin)
+
+
+
+class PracticeQuestionAdmin(admin.ModelAdmin):
+    list_display = (
+        'id', 'chapter', 'question_text', 'explanation', 'image', 'multiple_answers'
+    )
+admin.site.register(PracticeQuestion, PracticeQuestionAdmin)
