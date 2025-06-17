@@ -65,56 +65,63 @@ class ProfileView(generics.RetrieveUpdateAPIView):
 class HomePageAdminView(generics.ListCreateAPIView):
     queryset = HomePage.objects.all()
     serializer_class = HomePageModelSerializer
-    authentication_classes = [TokenAuthentication]
+    # authentication_classes = [TokenAuthentication]
     permission_classes = [IsAdminUser]
 
 
 class QuestionAdminView(generics.ListCreateAPIView):
     queryset = Question.objects.all()
     serializer_class = QuestionModelSerializer
-    authentication_classes = [TokenAuthentication]
+    # authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAdminUser]
+
+
+class PracticeQuestionOptionAdminView(generics.ListCreateAPIView):
+    queryset = PracticeOption.objects.all()
+    serializer_class = PracticeOptionSerializer
+    # authentication_classes = [TokenAuthentication]
     permission_classes = [IsAdminUser]
 
 
 class LessonAdminView(generics.ListCreateAPIView):
     queryset = Lesson.objects.all()
     serializer_class = LessonModelSerializers
-    authentication_classes = [TokenAuthentication]
+    # authentication_classes = [TokenAuthentication]
     permission_classes = [IsAdminUser]
     
     
 class LessonContentAdminView(generics.ListCreateAPIView):
     queryset = LessonContent.objects.all()
     serializer_class = LessonContentModelSerializer
-    authentication_classes = [TokenAuthentication]
+    # authentication_classes = [TokenAuthentication]
     permission_classes = [IsAdminUser]
 
 
 class ChapterAdminView(generics.ListCreateAPIView):
     queryset = Chapter.objects.all()
     serializer_class = ChapterModelSerializer
-    authentication_classes = [TokenAuthentication]
+    # authentication_classes = [TokenAuthentication]
     permission_classes = [IsAdminUser]
 
 
 class GuideSupportAdminView(generics.ListCreateAPIView):
     queryset = GuidesSupport.objects.all()
     serializer_class = GuidesSupportModelSerializer
-    authentication_classes = [TokenAuthentication]
+    # authentication_classes = [TokenAuthentication]
     permission_classes = [IsAdminUser]
 
 
 class GuideSupportContentAdminView(generics.ListCreateAPIView):
     queryset = GuideSupportContent.objects.all()
     serializer_class = GuideSupportContentModelSerializer
-    authentication_classes = [TokenAuthentication]
+    # authentication_classes = [TokenAuthentication]
     permission_classes = [IsAdminUser]
 
 
 class SubscriptionPlanAdminView(generics.ListCreateAPIView):
     queryset = SubscriptionPlan.objects.all()
     serializer_class = SubscriptionPlanSerializer
-    authentication_classes = [TokenAuthentication]
+    # authentication_classes = [TokenAuthentication]
     permission_classes = [IsAdminUser]
 
 
@@ -123,14 +130,21 @@ class SubscriptionPlanAdminView(generics.ListCreateAPIView):
 class HomePageDetailsAdminView(generics.RetrieveUpdateDestroyAPIView):
     queryset = HomePage.objects.all()
     serializer_class = HomePageModelSerializer
-    authentication_classes = [TokenAuthentication]
+    # authentication_classes = [TokenAuthentication]
     permission_classes = [IsAdminUser]
     lookup_field = "pk"
 
 class QuestionDetailsAdminView(generics.RetrieveUpdateDestroyAPIView):
     queryset = Question.objects.all()
     serializer_class = QuestionModelSerializer
-    authentication_classes = [TokenAuthentication]
+    # authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAdminUser]
+    lookup_field = "pk"
+
+class PracticeQuestionOptionDetailsAdminView(generics.RetrieveUpdateDestroyAPIView):
+    queryset = PracticeOption.objects.all()
+    serializer_class = PracticeOptionSerializer
+    # authentication_classes = [TokenAuthentication]
     permission_classes = [IsAdminUser]
     lookup_field = "pk"
 
@@ -144,7 +158,7 @@ class LessonDetailsAdminView(generics.RetrieveUpdateDestroyAPIView):
 class LessonContentDetailsAdminView(generics.RetrieveUpdateDestroyAPIView):
     queryset = LessonContent
     serializer_class = LessonContentModelSerializer
-    authentication_classes = [TokenAuthentication]
+    # authentication_classes = [TokenAuthentication]
     permission_classes = [IsAdminUser]
     lookup_field = "pk"
 
@@ -152,28 +166,28 @@ class LessonContentDetailsAdminView(generics.RetrieveUpdateDestroyAPIView):
 class ChapterDetailsAdminView(generics.RetrieveUpdateDestroyAPIView):
     queryset = Chapter.objects.all()
     serializer_class = ChapterModelSerializer
-    authentication_classes = [TokenAuthentication]
+    # authentication_classes = [TokenAuthentication]
     permission_classes = [IsAdminUser]
     lookup_field = "pk"
 
 class GuideSupportDetailsAdminView(generics.RetrieveUpdateDestroyAPIView):
     queryset = GuidesSupport.objects.all()
     serializer_class = GuidesSupportModelSerializer
-    authentication_classes = [TokenAuthentication]
+    # authentication_classes = [TokenAuthentication]
     permission_classes = [IsAdminUser]
     lookup_field = "pk"
 
 class GuideSupportContentDetailsAdminView(generics.RetrieveUpdateDestroyAPIView):
     queryset = GuidesSupport.objects.all()
     serializer_class = GuidesSupportModelSerializer
-    authentication_classes = [TokenAuthentication]
+    # authentication_classes = [TokenAuthentication]
     permission_classes = [IsAdminUser]
     lookup_field = "pk"
 
 class SubscriptionPlanDetailsAdminView(generics.RetrieveUpdateDestroyAPIView):
     queryset = SubscriptionPlan.objects.all()
     serializer_class = SubscriptionPlanSerializer
-    authentication_classes = [TokenAuthentication]
+    # authentication_classes = [TokenAuthentication]
     permission_classes = [IsAdminUser]
     lookup_field = "pk"
 
