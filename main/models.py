@@ -80,15 +80,15 @@ class LessonContent(models.Model):
 
 
 
-class Question(models.Model):
-    title = models.CharField(max_length=150)
-    description = models.CharField(max_length=200, blank=True, null=True)
-    chapter = models.ForeignKey(Chapter, on_delete=models.CASCADE, blank=True, null=True)
-    options = models.JSONField(default=" ")
-    image = models.ImageField(upload_to="question", blank=True, null=True)
+# class Question(models.Model):
+#     title = models.CharField(max_length=150)
+#     description = models.CharField(max_length=200, blank=True, null=True)
+#     chapter = models.ForeignKey(Chapter, on_delete=models.CASCADE, blank=True, null=True)
+#     options = models.JSONField(default=" ")
+#     image = models.ImageField(upload_to="question", blank=True, null=True)
 
-    def __str__(self):
-        return self.title
+#     def __str__(self):
+#         return self.title
     
 
 class GuidesSupport(models.Model):
@@ -109,10 +109,18 @@ class GuideSupportContent(models.Model):
 
     def __str__(self):
         return self.guide.name
+
+
+QuestionType = {
+    "practice": "practice",
+    "mockTest": "mockTest",
+    "freeMockTest": "freeMockTest",
+}
     
 
 class PracticeQuestion(models.Model):
     chapter = models.ForeignKey(Chapter, on_delete=models.CASCADE, related_name='questions')
+    type = models.CharField(choices=QuestionType, max_length=50, default="practice")
     question_text = models.TextField()
     explanation = models.TextField(blank=True, null=True)
     image = models.ImageField(upload_to='questions/', blank=True, null=True)

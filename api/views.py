@@ -4,9 +4,9 @@ from django.utils import timezone
 from django.contrib.auth import authenticate
 from datetime import timedelta
 
-from main.models import Question, Lesson, Chapter, Profile, GuidesSupport, HomePage, GuideSupportContent, LessonContent, UserEvaluation, PracticeQuestion, PracticeOption
+from main.models import Lesson, Chapter, Profile, GuidesSupport, HomePage, GuideSupportContent, LessonContent, UserEvaluation, PracticeQuestion, PracticeOption
 from subscriptions.models import SubscriptionPlan, UserSubscription
-from . serializers import LessonModelSerializers, QuestionModelSerializer, ChapterModelSerializer, RegisterSerializer, ProfileModelSerializer, GuidesSupportModelSerializer, HomePageModelSerializer, GuideSupportContentModelSerializer, LessonContentModelSerializer, UserEvaluationModelSerializer, SubscriptionPlanSerializer, UserSubscriptionSerializer, PracticeOptionSerializer, PracticeQuestionSerializer
+from . serializers import LessonModelSerializers, ChapterModelSerializer, RegisterSerializer, ProfileModelSerializer, GuidesSupportModelSerializer, HomePageModelSerializer, GuideSupportContentModelSerializer, LessonContentModelSerializer, UserEvaluationModelSerializer, SubscriptionPlanSerializer, UserSubscriptionSerializer, PracticeOptionSerializer, PracticeQuestionSerializer
 # from . permissions import IsAdminOrReadOnly
 
 from rest_framework.views import View, APIView
@@ -69,11 +69,11 @@ class HomePageAdminView(generics.ListCreateAPIView):
     permission_classes = [IsAdminUser]
 
 
-class QuestionAdminView(generics.ListCreateAPIView):
-    queryset = Question.objects.all()
-    serializer_class = QuestionModelSerializer
-    # authentication_classes = [TokenAuthentication]
-    permission_classes = [IsAdminUser]
+# class QuestionAdminView(generics.ListCreateAPIView):
+#     queryset = Question.objects.all()
+#     serializer_class = QuestionModelSerializer
+#     # authentication_classes = [TokenAuthentication]
+#     permission_classes = [IsAdminUser]
 
 
 class PracticeQuestionOptionAdminView(generics.ListCreateAPIView):
@@ -134,12 +134,12 @@ class HomePageDetailsAdminView(generics.RetrieveUpdateDestroyAPIView):
     permission_classes = [IsAdminUser]
     lookup_field = "pk"
 
-class QuestionDetailsAdminView(generics.RetrieveUpdateDestroyAPIView):
-    queryset = Question.objects.all()
-    serializer_class = QuestionModelSerializer
-    # authentication_classes = [TokenAuthentication]
-    permission_classes = [IsAdminUser]
-    lookup_field = "pk"
+# class QuestionDetailsAdminView(generics.RetrieveUpdateDestroyAPIView):
+#     queryset = Question.objects.all()
+#     serializer_class = QuestionModelSerializer
+#     # authentication_classes = [TokenAuthentication]
+#     permission_classes = [IsAdminUser]
+#     lookup_field = "pk"
 
 class PracticeQuestionOptionDetailsAdminView(generics.RetrieveUpdateDestroyAPIView):
     queryset = PracticeOption.objects.all()
@@ -493,7 +493,7 @@ class QuestionStepView(APIView):
             return Response({"detail": "step must be an integer."},
                             status=status.HTTP_400_BAD_REQUEST)
 
-        qs     = PracticeQuestion.objects.filter(chapter_id=chapter_id).order_by("id")
+        qs     = PracticeQuestion.objects.filter(type = "practice", chapter_id=chapter_id).order_by("id")
         total  = qs.count()
 
         if step < 0 or step >= total:

@@ -148,7 +148,7 @@ SIMPLE_JWT = {
     'BLACKLIST_AFTER_ROTATION': True,
     'UPDATE_LAST_LOGIN': False,
     'ALGORITHM': 'HS256',
-    'SIGNING_KEY': 'your-very-secret-key', # !!! CHANGE THIS IN PRODUCTION !!!
+    'SIGNING_KEY': 'your-very-secret-key', # SHOULD BE CHANGE THIS IN PRODUCTION
     'VERIFYING_KEY': None,
     'AUDIENCE': None,
     'ISSUER': None,
