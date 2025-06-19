@@ -493,7 +493,7 @@ class PracticeQuestionStepView(APIView):
             return Response({"detail": "step must be an integer."},
                             status=status.HTTP_400_BAD_REQUEST)
 
-        qs     = PracticeQuestion.objects.filter(type = "practice", chapter_id=chapter_id).order_by("id")
+        qs     = Question.objects.filter(type = "practice", chapter_id=chapter_id).order_by("id")
         total  = qs.count()
 
         if step < 0 or step >= total:
@@ -501,7 +501,7 @@ class PracticeQuestionStepView(APIView):
                             status=status.HTTP_404_NOT_FOUND)
 
         question = qs[step]
-        data     = PracticeQuestionSerializer(question).data
+        data     = QuestionSerializer(question).data
         return Response({
             "step":   step,
             "total":  total,
@@ -530,8 +530,8 @@ class SubmitAnswerView(APIView):
 
         # Validate question
         try:
-            question = PracticeQuestion.objects.get(id=question_id, chapter_id=chapter_id)
-        except PracticeQuestion.DoesNotExist:
+            question = Question.objects.get(id=question_id, chapter_id=chapter_id)
+        except Question.DoesNotExist:
             return Response({"detail": "Invalid question."}, status=status.HTTP_400_BAD_REQUEST)
 
         correct_set = set(question.options.filter(is_correct=True).values_list('id', flat=True))
@@ -549,7 +549,7 @@ class SubmitAnswerView(APIView):
         }
 
         # Determine next step
-        qs    = PracticeQuestion.objects.filter(chapter_id=chapter_id).order_by("id")
+        qs    = Question.objects.filter(chapter_id=chapter_id).order_by("id")
         total = qs.count()
         next_step = step + 1
 
@@ -564,7 +564,7 @@ class SubmitAnswerView(APIView):
 
         # Otherwise send the next question
         next_q   = qs[next_step]
-        next_ser = PracticeQuestionSerializer(next_q)
+        next_ser = QuestionSerializer(next_q)
 
         return Response({
             "completed": False,
