@@ -4,9 +4,9 @@ from django.utils import timezone
 from django.contrib.auth import authenticate
 from datetime import timedelta
 
-from main.models import Lesson, Chapter, Profile, GuidesSupport, HomePage, GuideSupportContent, LessonContent, UserEvaluation, PracticeQuestion, PracticeOption
+from main.models import Lesson, Chapter, Profile, GuidesSupport, HomePage, GuideSupportContent, LessonContent, UserEvaluation, Question, QuestionOption
 from subscriptions.models import SubscriptionPlan, UserSubscription
-from . serializers import LessonModelSerializers, ChapterModelSerializer, RegisterSerializer, ProfileModelSerializer, GuidesSupportModelSerializer, HomePageModelSerializer, GuideSupportContentModelSerializer, LessonContentModelSerializer, UserEvaluationModelSerializer, SubscriptionPlanSerializer, UserSubscriptionSerializer, PracticeOptionSerializer, PracticeQuestionSerializer
+from . serializers import LessonModelSerializers, ChapterModelSerializer, RegisterSerializer, ProfileModelSerializer, GuidesSupportModelSerializer, HomePageModelSerializer, GuideSupportContentModelSerializer, LessonContentModelSerializer, UserEvaluationModelSerializer, SubscriptionPlanSerializer, UserSubscriptionSerializer, QuestionOptionSerializer, QuestionSerializer
 # from . permissions import IsAdminOrReadOnly
 
 from rest_framework.views import View, APIView
@@ -69,16 +69,16 @@ class HomePageAdminView(generics.ListCreateAPIView):
     permission_classes = [IsAdminUser]
 
 
-# class QuestionAdminView(generics.ListCreateAPIView):
-#     queryset = Question.objects.all()
-#     serializer_class = QuestionModelSerializer
-#     # authentication_classes = [TokenAuthentication]
-#     permission_classes = [IsAdminUser]
+class QuestionAdminView(generics.ListCreateAPIView):
+    queryset = Question.objects.all()
+    serializer_class = QuestionSerializer
+    # authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAdminUser]
 
 
-class PracticeQuestionOptionAdminView(generics.ListCreateAPIView):
-    queryset = PracticeOption.objects.all()
-    serializer_class = PracticeOptionSerializer
+class QuestionOptionAdminView(generics.ListCreateAPIView):
+    queryset = QuestionOption.objects.all()
+    serializer_class = QuestionOptionSerializer
     # authentication_classes = [TokenAuthentication]
     permission_classes = [IsAdminUser]
 
@@ -134,16 +134,16 @@ class HomePageDetailsAdminView(generics.RetrieveUpdateDestroyAPIView):
     permission_classes = [IsAdminUser]
     lookup_field = "pk"
 
-# class QuestionDetailsAdminView(generics.RetrieveUpdateDestroyAPIView):
-#     queryset = Question.objects.all()
-#     serializer_class = QuestionModelSerializer
-#     # authentication_classes = [TokenAuthentication]
-#     permission_classes = [IsAdminUser]
-#     lookup_field = "pk"
+class QuestionDetailsAdminView(generics.RetrieveUpdateDestroyAPIView):
+    queryset = Question.objects.all()
+    serializer_class = QuestionSerializer
+    # authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAdminUser]
+    lookup_field = "pk"
 
-class PracticeQuestionOptionDetailsAdminView(generics.RetrieveUpdateDestroyAPIView):
-    queryset = PracticeOption.objects.all()
-    serializer_class = PracticeOptionSerializer
+class QuestionOptionDetailsAdminView(generics.RetrieveUpdateDestroyAPIView):
+    queryset = QuestionOption.objects.all()
+    serializer_class = QuestionOptionSerializer
     # authentication_classes = [TokenAuthentication]
     permission_classes = [IsAdminUser]
     lookup_field = "pk"
@@ -481,7 +481,7 @@ class SubmitAnswers(APIView):
 
 PAGE_SIZE = 1
 
-class QuestionStepView(APIView):
+class PracticeQuestionStepView(APIView):
     """
     GET /practice/chapters/<chapter_id>/question/?step=0
     Returns exactly one question (index = step)

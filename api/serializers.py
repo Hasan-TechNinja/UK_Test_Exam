@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from main.models import Chapter, Lesson, Profile, GuidesSupport, UserEvaluation, HomePage, LessonContent, GuideSupportContent, PracticeOption, PracticeQuestion
+from main.models import Chapter, Lesson, Profile, GuidesSupport, UserEvaluation, HomePage, LessonContent, GuideSupportContent, QuestionOption, Question
 from subscriptions.models import SubscriptionPlan, UserSubscription
 from django.contrib.auth.models import User
 
@@ -95,15 +95,15 @@ class LessonContentModelSerializer(serializers.ModelSerializer):
 
 
 
-class PracticeOptionSerializer(serializers.ModelSerializer):
+class QuestionOptionSerializer(serializers.ModelSerializer):
     class Meta:
-        model  = PracticeOption
+        model  = QuestionOption
         fields = ['text']
 
-class PracticeQuestionSerializer(serializers.ModelSerializer):
-    options = PracticeOptionSerializer(many=True, read_only=True)
+class QuestionSerializer(serializers.ModelSerializer):
+    options = QuestionOptionSerializer(many=True, read_only=True)
     class Meta:
-        model  = PracticeQuestion
+        model  = Question
         fields = ['id', 'question_text', 'image', 'multiple_answers', 'options']
 
 

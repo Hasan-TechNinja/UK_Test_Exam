@@ -78,17 +78,6 @@ class LessonContent(models.Model):
     def __str__(self):
         return self.lesson.name
 
-
-
-# class Question(models.Model):
-#     title = models.CharField(max_length=150)
-#     description = models.CharField(max_length=200, blank=True, null=True)
-#     chapter = models.ForeignKey(Chapter, on_delete=models.CASCADE, blank=True, null=True)
-#     options = models.JSONField(default=" ")
-#     image = models.ImageField(upload_to="question", blank=True, null=True)
-
-#     def __str__(self):
-#         return self.title
     
 
 class GuidesSupport(models.Model):
@@ -118,7 +107,7 @@ QuestionType = {
 }
     
 
-class PracticeQuestion(models.Model):
+class Question(models.Model):
     chapter = models.ForeignKey(Chapter, on_delete=models.CASCADE, related_name='questions')
     type = models.CharField(choices=QuestionType, max_length=50, default="practice")
     question_text = models.TextField()
@@ -130,8 +119,8 @@ class PracticeQuestion(models.Model):
         return self.question_text
     
 
-class PracticeOption(models.Model):
-    question = models.ForeignKey(PracticeQuestion, on_delete=models.CASCADE, related_name='options')
+class QuestionOption(models.Model):
+    question = models.ForeignKey(Question, on_delete=models.CASCADE, related_name='options')
     text = models.CharField(max_length=255)
     is_correct = models.BooleanField(default=False)
 

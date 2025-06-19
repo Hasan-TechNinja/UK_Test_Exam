@@ -15,8 +15,8 @@ urlpatterns = [
     path('homeAdmin/', views.HomePageAdminView.as_view(), name='homeAdmin'),
     path('chapterAdmin/', views.ChapterAdminView.as_view(), name='chapterAdmin'),
     path('lessonAdmin/', views.LessonAdminView.as_view(), name='lessonAdmin'),
-    # path('questionAdmin/', views.QuestionAdminView.as_view(), name='theoryAdmin'),
-    # path('PracticeQuestionAdmin/', views.PracticeQuestionOptionAdminView.as_view(), name='PracticeQuestionAdmin'),
+    path('questionAdmin/', views.QuestionAdminView.as_view(), name='questionAdmin'),
+    path('questionOptionsAdmin/', views.QuestionOptionAdminView.as_view(), name='questionOptionsAdmin'),
     path('guideAdmin/', views.GuideSupportAdminView.as_view(), name='guideAdmin'),
     path('subscriptionPlan/', views.SubscriptionPlanAdminView.as_view(), name = 'subscriptionPlan'),
     
@@ -24,8 +24,8 @@ urlpatterns = [
     path('homeAdmin/<int:pk>', views.HomePageDetailsAdminView.as_view(), name='homeAdmin'),
     path('chapterAdmin/<int:pk>', views.ChapterDetailsAdminView.as_view(), name='chapterAdmin'),
     path('lessonAdmin/<int:pk>', views.LessonContentDetailsAdminView.as_view(), name='lessonAdmin'),
-    # path('questionAdmin/<int:pk>', views.QuestionDetailsAdminView.as_view(), name='questionAdmin'),
-    # path('PracticeQuestionAdmin/<int:pk>', views.PracticeQuestionOptionDetailsAdminView.as_view(), name='PracticeQuestionAdmin'),
+    path('questionAdmin/<int:pk>', views.QuestionDetailsAdminView.as_view(), name='questionAdmin'),
+    path('questionOptionsAdmin/<int:pk>', views.QuestionOptionDetailsAdminView.as_view(), name='questionOptionsAdmin'),
     path('guideAdmin/<int:pk>', views.GuideSupportDetailsAdminView.as_view(), name='guideAdmin'),
     path('guideAdmin/<int:pk>', views.GuideSupportContentDetailsAdminView.as_view(), name='guideAdmin'),
     path('subscriptionPlan/<int:pk>', views.SubscriptionPlanDetailsAdminView.as_view(), name = 'subscriptionPlan'),
@@ -49,7 +49,7 @@ urlpatterns = [
     # path('practice/chapters/', views.PracticeChapterList.as_view(), name='practice-chapters'),
     # path('practice/chapters/<int:chapter_id>/questions/', views.ChapterQuestionList.as_view(), name='chapter-questions'),
     # path('practice/submit/', views.SubmitAnswers.as_view(), name='submit-practice-answers'),
-    path('practice/chapters/<int:chapter_id>/question/', views.QuestionStepView.as_view()),
+    path('practice/chapters/<int:chapter_id>/question/', views.PracticeQuestionStepView.as_view()),
     path('practice/answer/', views.SubmitAnswerView.as_view()),
 
 ]
