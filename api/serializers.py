@@ -56,13 +56,13 @@ class RegisterSerializer(serializers.ModelSerializer):
 class ProfileModelSerializer(serializers.ModelSerializer):
     class Meta:
         model = Profile
-        exclude = ["user", "created_at"]
+        exclude = ["user", "id", "created_at"]
 
 
 class GuidesSupportModelSerializer(serializers.ModelSerializer):
     class Meta:
         model = GuidesSupport
-        exclude = ['status', 'created']
+        exclude = ['created']
 
 
 class GuideSupportContentModelSerializer(serializers.ModelSerializer):

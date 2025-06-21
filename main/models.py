@@ -43,7 +43,7 @@ class HomePage(models.Model):
 
 
 class Chapter(models.Model):
-    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='theory_categories')
+    # user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='theory_categories')
     name = models.CharField(max_length=100, default="")
     description = models.TextField(blank=True, null=True)
     created = models.DateTimeField(auto_now_add=True)
@@ -53,16 +53,16 @@ class Chapter(models.Model):
 
 
 class Lesson(models.Model):
-    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    # user = models.ForeignKey(User, on_delete=models.CASCADE)
     name = models.CharField(max_length=100, default="")
     title = models.CharField(max_length=100)
     chapter = models.ForeignKey(Chapter, on_delete=models.CASCADE, null=True)
     created = models.DateTimeField(auto_now_add=True)
-    updated = models.DateTimeField(auto_now=True)
-    status = models.BooleanField(default=False)
+    # updated = models.DateTimeField(auto_now=True)
+    # status = models.BooleanField(default=False)
 
     def __str__(self):
-        return self.name
+        return f"{self.chapter.name} {self.name}"
     
     class Meta:
         ordering = ['-created']
@@ -83,7 +83,7 @@ class LessonContent(models.Model):
 class GuidesSupport(models.Model):
     name = models.CharField(max_length=150, default="")
     title = models.CharField(max_length=200)
-    status = models.BooleanField(default=False)
+    # status = models.BooleanField(default=False)
     created = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):

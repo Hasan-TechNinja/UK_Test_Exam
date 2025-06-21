@@ -1,5 +1,5 @@
 from django.contrib import admin
-from . models import Chapter, Lesson, Profile, GuidesSupport, GuideSupportContent, LessonContent, HomePage, QuestionOption, Question
+from . models import Chapter, Lesson, Profile, GuidesSupport, GuideSupportContent, LessonContent, HomePage, QuestionOption, Question, UserEvaluation
 from rest_framework.authtoken.models import Token
 
 # Register your models here.
@@ -13,7 +13,7 @@ admin.site.register(HomePage, HomePageModelAdmin)
 
 class ChapterModelAdmin(admin.ModelAdmin):
     list_display = (
-        'id', 'user', 'name', 'description','created'
+        'id', 'name', 'description','created'
     )
 admin.site.register(Chapter, ChapterModelAdmin)
 
@@ -21,7 +21,7 @@ admin.site.register(Chapter, ChapterModelAdmin)
 
 class LessonModelAdmin(admin.ModelAdmin):
     list_display = (
-        'id', 'user', 'name', 'title', 'chapter', 'created', 'updated'
+        'id', 'name', 'title', 'chapter', 'created',
     )
 admin.site.register(Lesson, LessonModelAdmin)
 
@@ -50,10 +50,17 @@ class ProfileModelAdmin(admin.ModelAdmin):
 admin.site.register(Profile, ProfileModelAdmin)
 
 
+class UserEvaluationModelAdmin(admin.ModelAdmin):
+    list_display = (
+        'id', 'user', 'MockTestTaken', 'LeftMockTest', 'PracticeCompleted', 'QuestionAnswered', 'CorrectAnswered', 'WrongAnswered'
+    )
+admin.site.register(UserEvaluation, UserEvaluationModelAdmin)
+
+
 
 class GuidesSupportModelAdmin(admin.ModelAdmin):
     list_display = (
-        'id', 'name', 'title', 'status', 'created'
+        'id', 'name', 'title', 'created'
     )
 admin.site.register(GuidesSupport, GuidesSupportModelAdmin)
 

@@ -59,7 +59,7 @@ class ProfileView(generics.RetrieveUpdateAPIView):
     def get_object(self):
         return self.request.user.profile
 
-    
+        
 # --------------------------------------------------Admin Control---------------------------------------------
 
 class HomePageAdminView(generics.ListCreateAPIView):
@@ -268,36 +268,40 @@ class GuideSupportView(APIView):
 
 class GuideSupportContentView(APIView):
     """
-    GET http://127.0.0.1:8000/guide/1/?step=0
+    GET /guide/<guide_id>/?step=0
     Returns 10 items per step (pagination)
     """
+    PAGE_SIZE = 10
+
     def get(self, request, guide_id):
         try:
             step = int(request.query_params.get("step", 0))
         except (TypeError, ValueError):
-            return Response({"detail": "step must be an integer."}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({"detail": "step must be an integer."},
+                            status=status.HTTP_400_BAD_REQUEST)
 
-        PAGE_SIZE = 10
-        start_index = step * PAGE_SIZE
-        end_index = start_index + PAGE_SIZE
+        guide = get_object_or_404(GuidesSupport, pk=guide_id)
+        title = guide.title
 
-        # Get paginated contents
-        contents = GuideSupportContent.objects.filter(guide_id=guide_id).order_by("id")
-        total = contents.count()
+        contents_qs = GuideSupportContent.objects.filter(
+            guide_id=guide_id
+        ).order_by("id")
 
-        if start_index >= total:
-            return Response({"detail": "No content available for this page."}, status=status.HTTP_404_NOT_FOUND)
+        total = contents_qs.count()
+        start = step * self.PAGE_SIZE
+        end = start + self.PAGE_SIZE
 
-        current_items = contents[start_index:end_index]
+        if start >= total:  
+            return Response({"detail": "No content available for this page."},
+                            status=status.HTTP_404_NOT_FOUND)
+
+        current_items = contents_qs[start:end]
         serializer = GuideSupportContentModelSerializer(current_items, many=True)
 
         return Response({
-            # "step": step,
-            # "page_size": PAGE_SIZE,
+            "title": title,
             "total_items": total,
-            # "has_prev": start_index > 0,
-            # "has_next": end_index < total,
-            "content": serializer.data
+            "content": serializer.data,
         }, status=status.HTTP_200_OK)
 
 
@@ -413,14 +417,14 @@ class UserSubscriptionViewSet(viewsets.GenericViewSet):
 
 #-------------------------------------Practice Chapter view-------------------------------------
 
-'''
+
 class PracticeChapterList(APIView):
     def get(self, request):
         chapters = Chapter.objects.all()
         serializer = ChapterModelSerializer(chapters, many=True)
         return Response(serializer.data)
 
-
+'''
 class ChapterQuestionList(APIView):
     def get(self, request, chapter_id):
         questions = PracticeQuestion.objects.filter(chapter_id=chapter_id).prefetch_related('options')

@@ -41,14 +41,13 @@ urlpatterns = [
     path('chapters/', views.ChapterListView.as_view(), name="chapters"),
     path('chapters/<int:pk>', views.ChapterLessonsView.as_view(), name="chapters"),
     path('chapters/<int:chapter_id>/<int:lesson_id>/', views.ChapterLessonDetailView.as_view(), name="chapter-lesson-detail"),
-    path('guide/', views.GuideSupportView.as_view(), name='guid'),
+
+    #Guide and support
+    path('guide/', views.GuideSupportView.as_view(), name='guide'),
     path('guide/<int:guide_id>/', views.GuideSupportContentView.as_view(), name='guideDetails'),
 
-
     # practice question answer
-    # path('practice/chapters/', views.PracticeChapterList.as_view(), name='practice-chapters'),
-    # path('practice/chapters/<int:chapter_id>/questions/', views.ChapterQuestionList.as_view(), name='chapter-questions'),
-    # path('practice/submit/', views.SubmitAnswers.as_view(), name='submit-practice-answers'),
+    path('practice/chapters/', views.PracticeChapterList.as_view(), name='practice'),
     path('practice/chapters/<int:chapter_id>/question/', views.PracticeQuestionStepView.as_view()),
     path('practice/answer/', views.SubmitAnswerView.as_view()),
 
