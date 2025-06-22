@@ -18,6 +18,7 @@ urlpatterns = [
     path('questionAdmin/', views.QuestionAdminView.as_view(), name='questionAdmin'),
     path('questionOptionsAdmin/', views.QuestionOptionAdminView.as_view(), name='questionOptionsAdmin'),
     path('guideAdmin/', views.GuideSupportAdminView.as_view(), name='guideAdmin'),
+    path('guideContentAdmin/', views.GuideSupportContentAdminView.as_view(), name='guideContentAdmin'),
     path('subscriptionPlan/', views.SubscriptionPlanAdminView.as_view(), name = 'subscriptionPlan'),
     
     #admin details view
@@ -27,7 +28,7 @@ urlpatterns = [
     path('questionAdmin/<int:pk>', views.QuestionDetailsAdminView.as_view(), name='questionAdmin'),
     path('questionOptionsAdmin/<int:pk>', views.QuestionOptionDetailsAdminView.as_view(), name='questionOptionsAdmin'),
     path('guideAdmin/<int:pk>', views.GuideSupportDetailsAdminView.as_view(), name='guideAdmin'),
-    path('guideAdmin/<int:pk>', views.GuideSupportContentDetailsAdminView.as_view(), name='guideAdmin'),
+    path('guideContentAdmin/<int:pk>', views.GuideSupportContentDetailsAdminView.as_view(), name='guideContentAdmin'),
     path('subscriptionPlan/<int:pk>', views.SubscriptionPlanDetailsAdminView.as_view(), name = 'subscriptionPlan'),
 
     # authentication
@@ -36,7 +37,7 @@ urlpatterns = [
     path('logout/', views.LogoutView.as_view(), name='logout'),
     path('profile/', views.ProfileView.as_view(), name='profile'),
 
-    # user 
+    # user study
     path('home/', views.HomePageView.as_view(), name="home"),
     path('chapters/', views.ChapterListView.as_view(), name="chapters"),
     path('chapters/<int:pk>', views.ChapterLessonsView.as_view(), name="chapters"),

@@ -4,5 +4,9 @@ django-ckeditor==6.7.2
 django-js-asset==3.1.2
 django-tinymce==4.1.0
 djangorestframework==3.16.0
+djangorestframework_simplejwt==5.5.0
 pillow==11.2.1
+PyJWT==2.9.0
+rest-framework-simplejwt==0.0.2
 sqlparse==0.5.3
+typing==3.7.4.3

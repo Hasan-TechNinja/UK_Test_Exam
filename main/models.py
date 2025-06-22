@@ -1,6 +1,7 @@
 from django.db import models
 from ckeditor.fields import RichTextField
 from django.contrib.auth.models import User
+from django.core.validators import MaxValueValidator, MinValueValidator
 
 # Create your models here.
 
@@ -126,3 +127,15 @@ class QuestionOption(models.Model):
 
     def __str__(self):
         return self.text
+    
+
+class MockTest(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    chapter = models.ForeignKey(Chapter, on_delete=models.CASCADE)
+    question_attempted = models.CharField(max_length=50)
+    correct = models.CharField(max_length=50)
+    wrong = models.CharField(max_length=50)
+    score = models.CharField(max_length=50, validators=[MinValueValidator(0), MaxValueValidator(100)])
+    date = models.DateField(auto_now_add=True)
+    test_time = models.IntegerField(validators=[MaxValueValidator(9999)])
+    status = models.BooleanField(default=False)
