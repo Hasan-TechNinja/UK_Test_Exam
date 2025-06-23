@@ -7,6 +7,13 @@ router = DefaultRouter()
 router.register(r'subscription-plans', views.SubscriptionPlanViewSet)
 router.register(r'user-subscriptions', views.UserSubscriptionViewSet, basename='user-subscription')
 
+# mock_test = views.MockTestViewSet.as_view({
+#     'get': 'retrieve',
+# })
+
+mock_test = views.MockTestViewSet.as_view({'get': 'retrieve'})
+
+
 
 urlpatterns = [
     path('', include(router.urls)),
@@ -52,4 +59,18 @@ urlpatterns = [
     path('practice/chapters/<int:chapter_id>/question/', views.PracticeQuestionStepView.as_view()),
     path('practice/answer/', views.SubmitAnswerView.as_view()),
 
+    #
+    # path('mock-tests/start/', views.MockTestViewSet.as_view({'post': 'start'})),
+    # path('mock-tests/<int:pk>/', mock_test),
+    # path('mock-tests/<int:pk>/answer/', views.MockTestViewSet.as_view({'post': 'answer'})),
+    # path('mock-tests/<int:pk>/finish/', views.MockTestViewSet.as_view({'post': 'finish'})),
+    # path('mock-tests/history/', views.MockTestViewSet.as_view({'get': 'history'})),
+
+    path('mock-tests/start/', views.MockTestViewSet.as_view({'post': 'start'})),
+    path('mock-tests/<int:pk>/', mock_test),
+    path('mock-tests/<int:pk>/answer/', views.MockTestViewSet.as_view({'post': 'answer'})),
+    path('mock-tests/<int:pk>/finish/', views.MockTestViewSet.as_view({'post': 'finish'})),
+    path('mock-tests/history/', views.MockTestViewSet.as_view({'get': 'history'})),
+
 ]
+    

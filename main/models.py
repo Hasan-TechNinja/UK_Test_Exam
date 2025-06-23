@@ -114,7 +114,7 @@ class Question(models.Model):
     question_text = models.TextField()
     explanation = models.TextField(blank=True, null=True)
     image = models.ImageField(upload_to='questions/', blank=True, null=True)
-    multiple_answers = models.BooleanField(default=False)  # For questions with multiple correct answers
+    multiple_answers = models.BooleanField(default=True)
 
     def __str__(self):
         return self.question_text
@@ -126,16 +126,24 @@ class QuestionOption(models.Model):
     is_correct = models.BooleanField(default=False)
 
     def __str__(self):
-        return self.text
+        # return f"{self.question.id, self.text}"
+        return f"Q{self.question.id}: {self.text}"
+        # return f"Q{self.question.id} - {self.question.question_text[:40]}...: {self.text}"
     
 
-class MockTest(models.Model):
+class MockTestSession(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
-    chapter = models.ForeignKey(Chapter, on_delete=models.CASCADE)
-    question_attempted = models.CharField(max_length=50)
-    correct = models.CharField(max_length=50)
-    wrong = models.CharField(max_length=50)
-    score = models.CharField(max_length=50, validators=[MinValueValidator(0), MaxValueValidator(100)])
-    date = models.DateField(auto_now_add=True)
-    test_time = models.IntegerField(validators=[MaxValueValidator(9999)])
-    status = models.BooleanField(default=False)
+    started_at = models.DateTimeField(auto_now_add=True)
+    finished_at = models.DateTimeField(null=True, blank=True)
+    score = models.FloatField(null=True, blank=True)
+    total_questions = models.IntegerField(default=24)
+    duration_minutes = models.IntegerField(default=45)
+
+    def is_passed(self):
+        return self.score is not None and self.score >= 70
+
+class MockTestAnswer(models.Model):
+    session = models.ForeignKey(MockTestSession, related_name='answers', on_delete=models.CASCADE)
+    question = models.ForeignKey(Question, on_delete=models.CASCADE)
+    selected_choices = models.ManyToManyField(QuestionOption)
+    is_correct = models.BooleanField(default=False)

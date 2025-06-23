@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from main.models import Chapter, Lesson, Profile, GuidesSupport, UserEvaluation, HomePage, LessonContent, GuideSupportContent, QuestionOption, Question
+from main.models import Chapter, Lesson, Profile, GuidesSupport, UserEvaluation, HomePage, LessonContent, GuideSupportContent, QuestionOption, Question, MockTestSession, MockTestAnswer
 from subscriptions.models import SubscriptionPlan, UserSubscription
 from django.contrib.auth.models import User
 
@@ -98,7 +98,7 @@ class LessonContentModelSerializer(serializers.ModelSerializer):
 class QuestionOptionSerializer(serializers.ModelSerializer):
     class Meta:
         model  = QuestionOption
-        fields = ['text']
+        fields = ['id', 'text']
 
 class QuestionSerializer(serializers.ModelSerializer):
     options = QuestionOptionSerializer(many=True, read_only=True)
@@ -142,3 +142,29 @@ class UserSubscriptionSerializer(serializers.ModelSerializer):
         fields = ['id', 'user', 'plan', 'start_date', 'end_date', 'is_active', 'last_renewed', 'is_currently_active']
         read_only_fields = ['user', 'start_date', 'end_date', 'is_active', 'last_renewed']
 
+
+class StartMockTestSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = MockTestSession
+        fields = ['id', 'total_questions', 'duration_minutes', 'started_at']
+
+class MockTestAnswerSerializer(serializers.ModelSerializer):
+    selected_choice_ids = serializers.ListField(child=serializers.IntegerField(), write_only=True)
+
+    class Meta:
+        model = MockTestAnswer
+        fields = ['question', 'selected_choice_ids']
+
+class MockTestResultSerializer(serializers.ModelSerializer):
+    correct = serializers.SerializerMethodField()
+    wrong = serializers.SerializerMethodField()
+
+    class Meta:
+        model = MockTestSession
+        fields = ['id', 'score', 'correct', 'wrong', 'started_at', 'finished_at']
+
+    def get_correct(self, obj):
+        return obj.answers.filter(is_correct=True).count()
+
+    def get_wrong(self, obj):
+        return obj.answers.filter(is_correct=False).count()

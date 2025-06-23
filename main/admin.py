@@ -1,5 +1,5 @@
 from django.contrib import admin
-from . models import Chapter, Lesson, Profile, GuidesSupport, GuideSupportContent, LessonContent, HomePage, QuestionOption, Question, UserEvaluation
+from . models import Chapter, Lesson, Profile, GuidesSupport, GuideSupportContent, LessonContent, HomePage, QuestionOption, Question, UserEvaluation, MockTestAnswer, MockTestSession
 from rest_framework.authtoken.models import Token
 
 # Register your models here.
@@ -73,16 +73,35 @@ admin.site.register(GuideSupportContent, GuideSupportContentModelAdmin)
 
 
 
-class PracticeOptionAdmin(admin.ModelAdmin):
-    list_display = (
-        'id', 'question', 'text', 'is_correct'
-    )
-admin.site.register(QuestionOption, PracticeOptionAdmin)
+class QuestionOptionAdmin(admin.ModelAdmin):
+    # list_display = (
+    #     'id', 'question', 'text', 'is_correct'
+    # )
+    list_display = ('id', 'question', 'text', 'is_correct')
+    list_filter = ('question', 'is_correct')
+    search_fields = ('question__question_text', 'text')
+admin.site.register(QuestionOption, QuestionOptionAdmin)
 
 
 
-class PracticeQuestionAdmin(admin.ModelAdmin):
+class QuestionAdmin(admin.ModelAdmin):
     list_display = (
         'id', 'chapter', 'type', 'question_text', 'explanation', 'image', 'multiple_answers'
     )
-admin.site.register(Question, PracticeQuestionAdmin)
+admin.site.register(Question, QuestionAdmin)
+
+
+
+class MockTestSessionAdmin(admin.ModelAdmin):
+    list_display = (
+        'id', 'user', 'started_at', 'finished_at', 'score', 'total_questions', 'duration_minutes', 
+    )
+admin.site.register(MockTestSession, MockTestSessionAdmin)
+
+
+
+class MockTestAnswerAdmin(admin.ModelAdmin):
+    list_display = (
+        'id', 'session', 'question', 'is_correct'
+    )
+admin.site.register(MockTestAnswer, MockTestAnswerAdmin)
