@@ -452,63 +452,6 @@ class PracticeChapterList(APIView):
         serializer = ChapterModelSerializer(chapters, many=True)
         return Response(serializer.data)
 
-'''
-class ChapterQuestionList(APIView):
-    def get(self, request, chapter_id):
-        questions = PracticeQuestion.objects.filter(chapter_id=chapter_id).prefetch_related('options')
-        serializer = PracticeQuestionSerializer(questions, many=True)
-        return Response(serializer.data)
-
-
-class SubmitAnswers(APIView):
-    """
-    POST {
-        "answers": [
-            {"question_id": 1, "selected_options": [3]},
-            {"question_id": 2, "selected_options": [4, 6]}
-        ]
-    }
-    """
-    def post(self, request):
-        answers = request.data.get('answers', [])
-        total = len(answers)
-        correct_count = 0
-        results = []
-
-        for ans in answers:
-            qid = ans.get('question_id')
-            selected = set(ans.get('selected_options', []))
-
-            try:
-                question = PracticeQuestion.objects.get(id=qid)
-            except PracticeQuestion.DoesNotExist:
-                continue
-
-            correct = set(question.options.filter(is_correct=True).values_list('id', flat=True))
-            is_correct = selected == correct
-
-            if is_correct:
-                correct_count += 1
-
-            results.append({
-                "question_id": qid,
-                "is_correct": is_correct,
-                "correct_options": list(correct),
-                "selected_options": list(selected),
-                "explanation": question.explanation,
-            })
-
-        return Response({
-            "total": total,
-            "correct": correct_count,
-            "wrong": total - correct_count,
-            "score": int((correct_count / total) * 100) if total else 0,
-            "results": results
-        })
-'''
-
-
-
 
 
 PAGE_SIZE = 1
@@ -619,7 +562,7 @@ class MockTestViewSet(viewsets.ViewSet):
     @action(detail=False, methods=['post'])
     def start(self, request):
         total_questions = 14
-        questions = list(Question.objects.all())
+        questions = list(Question.objects.filter(type = "mockTest"))
 
         if len(questions) < total_questions:
             return Response({'error': 'Not enough questions to start the test.'}, status=status.HTTP_400_BAD_REQUEST)
@@ -710,7 +653,7 @@ class FreeMockTestViewSet(viewsets.ViewSet):
     @action(detail=False, methods=['post'])
     def start(self, request):
         total_questions = 14
-        questions = list(Question.objects.all())
+        questions = list(Question.objects.filter(type = "freeMockTest"))
         if len(questions) < total_questions:
             return Response({'error': 'Not enough questions to start the test.'}, status=status.HTTP_400_BAD_REQUEST)
 
