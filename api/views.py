@@ -63,9 +63,35 @@ class ProfileView(generics.RetrieveUpdateAPIView):
 
 class UserEvaluationView(APIView):
     def get(self, request):
-        evaluation = UserEvaluation.objects.get(user=request.user.profile)
-        serializer = UserEvaluationModelSerializer(evaluation)
-        return Response(serializer.data, status=status.HTTP_200_OK)
+        try:
+            evaluation = UserEvaluation.objects.get(user=request.user.profile)
+        except UserEvaluation.DoesNotExist:
+            return Response({'error': 'Evaluation not found.'}, status=status.HTTP_404_NOT_FOUND)
+
+        try:
+            total = int(evaluation.QuestionAnswered or 0)
+            correct = int(evaluation.CorrectAnswered or 0)
+            wrong = int(evaluation.WrongAnswered or 0)
+        except ValueError:
+            total = correct = wrong = 0
+
+        if total > 0:
+            correct_percentage = round((correct / total) * 100, 2)
+            wrong_percentage = round((wrong / total) * 100, 2)
+        else:
+            correct_percentage = wrong_percentage = 0.0
+
+        response_data = {
+            "MockTestTaken": evaluation.MockTestTaken,
+            "LeftMockTest": evaluation.LeftMockTest,
+            "PracticeCompleted": evaluation.PracticeCompleted,
+            "QuestionAnswered": total,
+            "CorrectAnsweredPercentage": correct_percentage,
+            "WrongAnsweredPercentage": wrong_percentage,
+        }
+
+        return Response(response_data, status=status.HTTP_200_OK)
+
 
         
 # --------------------------------------------------Admin Control---------------------------------------------
