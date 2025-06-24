@@ -7,10 +7,6 @@ router = DefaultRouter()
 router.register(r'subscription-plans', views.SubscriptionPlanViewSet)
 router.register(r'user-subscriptions', views.UserSubscriptionViewSet, basename='user-subscription')
 
-# mock_test = views.MockTestViewSet.as_view({
-#     'get': 'retrieve',
-# })
-
 mock_test = views.MockTestViewSet.as_view({'get': 'retrieve'})
 free_mock_test = views.FreeMockTestViewSet.as_view({'get': 'retrieve',})
 
