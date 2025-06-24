@@ -147,3 +147,22 @@ class MockTestAnswer(models.Model):
     question = models.ForeignKey(Question, on_delete=models.CASCADE)
     selected_choices = models.ManyToManyField(QuestionOption)
     is_correct = models.BooleanField(default=False)
+    
+    
+    
+class FreeMockTestSession(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    started_at = models.DateTimeField(auto_now_add=True)
+    finished_at = models.DateTimeField(null=True, blank=True)
+    score = models.FloatField(null=True, blank=True)
+    total_questions = models.IntegerField(default=24)
+    duration_minutes = models.IntegerField(default=45)
+
+    def is_passed(self):
+        return self.score is not None and self.score >= 70
+
+class FreeMockTestAnswer(models.Model):
+    session = models.ForeignKey(FreeMockTestSession, related_name='answers', on_delete=models.CASCADE)
+    question = models.ForeignKey(Question, on_delete=models.CASCADE)
+    selected_choices = models.ManyToManyField(QuestionOption)
+    is_correct = models.BooleanField(default=False)

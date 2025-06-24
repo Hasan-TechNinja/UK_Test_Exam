@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from main.models import Chapter, Lesson, Profile, GuidesSupport, UserEvaluation, HomePage, LessonContent, GuideSupportContent, QuestionOption, Question, MockTestSession, MockTestAnswer
+from main.models import Chapter, Lesson, Profile, GuidesSupport, UserEvaluation, HomePage, LessonContent, GuideSupportContent, QuestionOption, Question, MockTestSession, MockTestAnswer, FreeMockTestSession, FreeMockTestAnswer
 from subscriptions.models import SubscriptionPlan, UserSubscription
 from django.contrib.auth.models import User
 
@@ -162,6 +162,34 @@ class MockTestResultSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = MockTestSession
+        fields = ['id', 'score', 'correct', 'wrong', 'started_at', 'finished_at']
+
+    def get_correct(self, obj):
+        return obj.answers.filter(is_correct=True).count()
+
+    def get_wrong(self, obj):
+        return obj.answers.filter(is_correct=False).count()
+    
+
+class FreeStartMockTestSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = FreeMockTestSession
+        fields = ['id', 'total_questions', 'duration_minutes', 'started_at']
+
+
+class FreeMockTestAnswerSerializer(serializers.ModelSerializer):
+    selected_choice_ids = serializers.ListField(child=serializers.IntegerField(), write_only=True)
+
+    class Meta:
+        model = FreeMockTestAnswer
+        fields = ['question', 'selected_choice_ids']
+
+class FreeMockTestResultSerializer(serializers.ModelSerializer):
+    correct = serializers.SerializerMethodField()
+    wrong = serializers.SerializerMethodField()
+
+    class Meta:
+        model = FreeMockTestSession
         fields = ['id', 'score', 'correct', 'wrong', 'started_at', 'finished_at']
 
     def get_correct(self, obj):

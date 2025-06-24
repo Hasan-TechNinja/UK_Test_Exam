@@ -12,7 +12,7 @@ router.register(r'user-subscriptions', views.UserSubscriptionViewSet, basename='
 # })
 
 mock_test = views.MockTestViewSet.as_view({'get': 'retrieve'})
-
+free_mock_test = views.FreeMockTestViewSet.as_view({'get': 'retrieve',})
 
 
 urlpatterns = [
@@ -66,6 +66,13 @@ urlpatterns = [
     path('mock-tests/<int:pk>/answer/', views.MockTestViewSet.as_view({'post': 'answer'})),
     path('mock-tests/<int:pk>/finish/', views.MockTestViewSet.as_view({'post': 'finish'})),
     path('mock-tests/history/', views.MockTestViewSet.as_view({'get': 'history'})),
+
+    # free mock test
+    path('free-mock-tests/start/', views.FreeMockTestViewSet.as_view({'post': 'start'}), name='free-mock-start'),
+    path('free-mock-tests/<int:pk>/', free_mock_test, name='free-mock-retrieve'),
+    path('free-mock-tests/<int:pk>/answer/', views.FreeMockTestViewSet.as_view({'post': 'answer'}), name='free-mock-answer'),
+    path('free-mock-tests/<int:pk>/finish/', views.FreeMockTestViewSet.as_view({'post': 'finish'}), name='free-mock-finish'),
+    path('free-mock-tests/history/', views.FreeMockTestViewSet.as_view({'get': 'history'}), name='free-mock-history'),
 
 ]
     
