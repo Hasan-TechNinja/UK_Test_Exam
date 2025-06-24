@@ -2,6 +2,11 @@ from rest_framework import serializers
 from main.models import Chapter, Lesson, Profile, GuidesSupport, UserEvaluation, HomePage, LessonContent, GuideSupportContent, QuestionOption, Question, MockTestSession, MockTestAnswer, FreeMockTestSession, FreeMockTestAnswer
 from subscriptions.models import SubscriptionPlan, UserSubscription
 from django.contrib.auth.models import User
+from django.contrib.auth import get_user_model
+from django.contrib.auth.password_validation import validate_password
+from rest_framework.validators import UniqueValidator
+
+
 
 class ChapterModelSerializer(serializers.ModelSerializer):
     lessons = serializers.SerializerMethodField()
@@ -35,12 +40,7 @@ class LessonModelSerializers(serializers.ModelSerializer):
 
     
 
-# class QuestionModelSerializer(serializers.ModelSerializer):
-#     class Meta:
-#         model = Question
-#         fields = "__all__"
-
-
+'''
 class RegisterSerializer(serializers.ModelSerializer):
     password = serializers.CharField(write_only=True)
 
@@ -51,7 +51,29 @@ class RegisterSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         user = User.objects.create_user(**validated_data)
         return user
+'''
 
+User = get_user_model()
+
+class RegisterSerializer(serializers.ModelSerializer):
+    email = serializers.EmailField(
+        required=True,
+        validators=[UniqueValidator(queryset=User.objects.all(), message="This email is already in use.")]
+    )
+    password = serializers.CharField(write_only=True, validators=[validate_password])
+
+    class Meta:
+        model = User
+        fields = ['username', 'email', 'password']
+
+    def create(self, validated_data):
+        user = User.objects.create_user(
+            username=validated_data['username'],
+            email=validated_data['email'],
+            password=validated_data['password']
+        )
+        return user
+    
 
 class ProfileModelSerializer(serializers.ModelSerializer):
     class Meta:
