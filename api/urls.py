@@ -43,6 +43,7 @@ urlpatterns = [
     path('login/', views.LoginView.as_view(), name='login'),
     path('logout/', views.LogoutView.as_view(), name='logout'),
     path('profile/', views.ProfileView.as_view(), name='profile'),
+    path('evaluation/', views.UserEvaluationView.as_view(), name='evaluation'),
 
     # user study
     path('home/', views.HomePageView.as_view(), name="home"),
@@ -59,13 +60,7 @@ urlpatterns = [
     path('practice/chapters/<int:chapter_id>/question/', views.PracticeQuestionStepView.as_view()),
     path('practice/answer/', views.SubmitAnswerView.as_view()),
 
-    #
-    # path('mock-tests/start/', views.MockTestViewSet.as_view({'post': 'start'})),
-    # path('mock-tests/<int:pk>/', mock_test),
-    # path('mock-tests/<int:pk>/answer/', views.MockTestViewSet.as_view({'post': 'answer'})),
-    # path('mock-tests/<int:pk>/finish/', views.MockTestViewSet.as_view({'post': 'finish'})),
-    # path('mock-tests/history/', views.MockTestViewSet.as_view({'get': 'history'})),
-
+    # mock test
     path('mock-tests/start/', views.MockTestViewSet.as_view({'post': 'start'})),
     path('mock-tests/<int:pk>/', mock_test),
     path('mock-tests/<int:pk>/answer/', views.MockTestViewSet.as_view({'post': 'answer'})),

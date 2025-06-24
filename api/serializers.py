@@ -76,7 +76,8 @@ class GuideSupportContentModelSerializer(serializers.ModelSerializer):
 class UserEvaluationModelSerializer(serializers.ModelSerializer):
     class Meta:
         model = UserEvaluation
-        exclude = ['user']
+        fields = "__all__"
+        # exclude = ['user']
 
 
 

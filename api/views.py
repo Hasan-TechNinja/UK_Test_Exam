@@ -59,6 +59,13 @@ class ProfileView(generics.RetrieveUpdateAPIView):
 
     def get_object(self):
         return self.request.user.profile
+    
+
+class UserEvaluationView(APIView):
+    def get(self, request):
+        evaluation = UserEvaluation.objects.get(user=request.user.profile)
+        serializer = UserEvaluationModelSerializer(evaluation)
+        return Response(serializer.data, status=status.HTTP_200_OK)
 
         
 # --------------------------------------------------Admin Control---------------------------------------------
@@ -308,12 +315,6 @@ class GuideSupportContentView(APIView):
 
 #----------------------------------------------User profile section-----------------------
 
-class UserEvaluationView(APIView):
-    def get(self, request, pk):
-        evaluation = UserEvaluation.objects.get(user = request.user)
-        serializer = UserEvaluationModelSerializer(evaluation)
-        return Response(serializer.data, status=status.HTTP_200_OK)
-    
 
 
 
@@ -592,64 +593,6 @@ class MockTestViewSet(viewsets.ViewSet):
 
     @action(detail=False, methods=['post'])
     def start(self, request):
-        questions = list(Question.objects.all())
-        selected_questions = random.sample(questions, 2)
-        session = MockTestSession.objects.create(user=request.user)
-        for q in selected_questions:
-            MockTestAnswer.objects.create(session=session, question=q)
-        return Response(StartMockTestSerializer(session).data)
-
-    def retrieve(self, request, pk=None):
-        session = MockTestSession.objects.get(pk=pk, user=request.user)
-        answers = session.answers.all()
-        data = []
-        for a in answers:
-            data.append({
-                'question': QuestionSerializer(a.question).data,
-                'selected_choices': list(a.selected_choices.values_list('id', flat=True)),
-                'is_correct': a.is_correct
-            })
-        return Response({'session_id': session.id, 'answers': data})
-
-    @action(detail=True, methods=['post'])
-    def answer(self, request, pk=None):
-        session = MockTestSession.objects.get(pk=pk, user=request.user)
-        question_id = request.data.get('question')
-        choice_ids = request.data.get('selected_choice_ids', [])
-        try:
-            answer = session.answers.get(question_id=question_id)
-            answer.selected_choices.set(choice_ids)
-            correct_ids = list(answer.question.choices.filter(is_correct=True).values_list('id', flat=True))
-            answer.is_correct = sorted(correct_ids) == sorted(choice_ids)
-            answer.save()
-            return Response({'correct': answer.is_correct})
-        except:
-            return Response({'error': 'Invalid question or choices'}, status=400)
-
-    @action(detail=True, methods=['post'])
-    def finish(self, request, pk=None):
-        session = MockTestSession.objects.get(pk=pk, user=request.user)
-        total = session.answers.count()
-        correct = session.answers.filter(is_correct=True).count()
-        session.score = round((correct / total) * 100)
-        session.finished_at = timezone.now()
-        session.save()
-        return Response(MockTestResultSerializer(session).data)
-
-    @action(detail=False, methods=['get'])
-    def history(self, request):
-        sessions = MockTestSession.objects.filter(user=request.user, finished_at__isnull=False).order_by('-finished_at')
-        return Response(MockTestResultSerializer(sessions, many=True).data)
-'''
-
-
-
-
-class MockTestViewSet(viewsets.ViewSet):
-    permission_classes = [IsAuthenticated]
-
-    @action(detail=False, methods=['post'])
-    def start(self, request):
         total_questions = 14
         questions = list(Question.objects.all())
         if len(questions) < total_questions:
@@ -715,6 +658,96 @@ class MockTestViewSet(viewsets.ViewSet):
         session.score = round((correct / total) * 100)
         session.finished_at = timezone.now()
         session.save()
+        return Response(MockTestResultSerializer(session).data)
+
+    @action(detail=False, methods=['get'])
+    def history(self, request):
+        sessions = MockTestSession.objects.filter(user=request.user, finished_at__isnull=False).order_by('-finished_at')
+        return Response(MockTestResultSerializer(sessions, many=True).data)
+'''
+
+class MockTestViewSet(viewsets.ViewSet):
+    permission_classes = [IsAuthenticated]
+
+    @action(detail=False, methods=['post'])
+    def start(self, request):
+        total_questions = 14
+        questions = list(Question.objects.all())
+
+        if len(questions) < total_questions:
+            return Response({'error': 'Not enough questions to start the test.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        selected_questions = random.sample(questions, total_questions)
+        session = MockTestSession.objects.create(user=request.user, total_questions=total_questions)
+
+        for q in selected_questions:
+            MockTestAnswer.objects.create(session=session, question=q)
+
+        # Update UserEvaluation
+        profile = request.user.profile
+        evaluation, _ = UserEvaluation.objects.get_or_create(user=profile)
+        evaluation.MockTestTaken += 1
+        evaluation.save(update_fields=['MockTestTaken'])
+
+        return Response(StartMockTestSerializer(session).data)
+
+    def retrieve(self, request, pk=None):
+        session = get_object_or_404(MockTestSession, pk=pk, user=request.user)
+        answers = session.answers.select_related('question').prefetch_related('selected_choices', 'question__options')
+        data = []
+        for a in answers:
+            data.append({
+                'question': QuestionSerializer(a.question).data,
+                'selected_choices': list(a.selected_choices.values_list('id', flat=True)),
+                'is_correct': a.is_correct
+            })
+        return Response({'session_id': session.id, 'answers': data})
+
+    @action(detail=True, methods=['post'])
+    def answer(self, request, pk=None):
+        session = get_object_or_404(MockTestSession, pk=pk, user=request.user)
+        question_id = request.data.get('question')
+        choice_ids = request.data.get('selected_choice_ids', [])
+
+        if question_id is None or not isinstance(choice_ids, list):
+            return Response({'error': 'Both "question" and "selected_choice_ids" are required.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            answer = MockTestAnswer.objects.get(session=session, question_id=question_id)
+        except MockTestAnswer.DoesNotExist:
+            return Response({'error': 'Question not found in this session.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        valid_choice_ids = set(answer.question.options.values_list('id', flat=True))
+        if not set(choice_ids).issubset(valid_choice_ids):
+            return Response({'error': 'One or more choices are invalid for this question.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        answer.selected_choices.set(choice_ids)
+        correct_ids = set(answer.question.options.filter(is_correct=True).values_list('id', flat=True))
+        answer.is_correct = set(choice_ids) == correct_ids
+        answer.save()
+
+        return Response({'correct': answer.is_correct})
+
+    @action(detail=True, methods=['post'])
+    def finish(self, request, pk=None):
+        session = get_object_or_404(MockTestSession, pk=pk, user=request.user)
+        total = session.answers.count()
+        correct = session.answers.filter(is_correct=True).count()
+        wrong = total - correct
+
+        session.score = round((correct / total) * 100)
+        session.finished_at = timezone.now()
+        session.save()
+
+        # Update UserEvaluation
+        profile = request.user.profile
+        evaluation, _ = UserEvaluation.objects.get_or_create(user=profile)
+
+        evaluation.QuestionAnswered = str(int(evaluation.QuestionAnswered or "0") + total)
+        evaluation.CorrectAnswered = str(int(evaluation.CorrectAnswered or "0") + correct)
+        evaluation.WrongAnswered = str(int(evaluation.WrongAnswered or "0") + wrong)
+        evaluation.save(update_fields=['QuestionAnswered', 'CorrectAnswered', 'WrongAnswered'])
+
         return Response(MockTestResultSerializer(session).data)
 
     @action(detail=False, methods=['get'])
