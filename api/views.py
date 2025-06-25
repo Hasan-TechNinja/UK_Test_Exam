@@ -10,7 +10,7 @@ from subscriptions.models import SubscriptionPlan, UserSubscription
 from . serializers import LessonModelSerializers, ChapterModelSerializer, RegisterSerializer, ProfileModelSerializer, GuidesSupportModelSerializer, HomePageModelSerializer, GuideSupportContentModelSerializer, LessonContentModelSerializer, UserEvaluationModelSerializer, SubscriptionPlanSerializer, UserSubscriptionSerializer, QuestionOptionSerializer, QuestionSerializer, StartMockTestSerializer, MockTestAnswerSerializer, MockTestResultSerializer, FreeMockTestAnswerSerializer, FreeMockTestResultSerializer, FreeStartMockTestSerializer
 
 from rest_framework.views import View, APIView
-from rest_framework import mixins, generics, status, viewsets
+from rest_framework import mixins, generics, status, viewsets, permissions
 from rest_framework.response import Response
 from rest_framework.authtoken.models import Token
 from rest_framework.permissions import IsAuthenticated, IsAdminUser, AllowAny
@@ -18,6 +18,9 @@ from rest_framework.authentication import TokenAuthentication
 from rest_framework.decorators import api_view, authentication_classes, permission_classes, action
 from django.utils import timezone
 import random
+import csv
+from io import TextIOWrapper
+from django.db import transaction
 
 #  Create your views here.
 
@@ -720,3 +723,51 @@ class FreeMockTestViewSet(viewsets.ViewSet):
     def history(self, request):
         sessions = FreeMockTestSession.objects.filter(user=request.user, finished_at__isnull=False).order_by('-finished_at')
         return Response(FreeMockTestResultSerializer(sessions, many=True).data)
+    
+
+
+    # -----------------------Question upload-------------------------------
+
+class UploadCSVAPIView(APIView):
+    permission_classes = [permissions.IsAdminUser]  # Or IsAuthenticated
+
+    def post(self, request, *args, **kwargs):
+        csv_file = request.FILES.get("file")
+        if not csv_file:
+            return Response({"error": "CSV file is required."}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            decoded_file = TextIOWrapper(csv_file.file, encoding='utf-8')
+            reader = csv.DictReader(decoded_file)
+
+            with transaction.atomic():
+                for row in reader:
+                    chapter_id = row.get("chapter_id")
+                    try:
+                        chapter = Chapter.objects.get(id=chapter_id)
+                    except Chapter.DoesNotExist:
+                        return Response({"error": f"Chapter with id {chapter_id} not found."}, status=status.HTTP_400_BAD_REQUEST)
+
+                    question = Question.objects.create(
+                        chapter=chapter,
+                        type=row.get("type", "practice"),
+                        question_text=row.get("question_text"),
+                        explanation=row.get("explanation", ""),
+                        multiple_answers=row.get("multiple_answers", "false").lower() == "true"
+                    )
+
+                    # Dynamically parse options
+                    for i in range(1, 10):  # Support up to 9 options
+                        option_text = row.get(f"option_{i}_text")
+                        if option_text:
+                            is_correct = row.get(f"option_{i}_correct", "false").lower() == "true"
+                            QuestionOption.objects.create(
+                                question=question,
+                                text=option_text,
+                                is_correct=is_correct
+                            )
+
+            return Response({"message": "Questions uploaded successfully."}, status=status.HTTP_201_CREATED)
+
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)

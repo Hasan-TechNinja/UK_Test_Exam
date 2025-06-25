@@ -70,5 +70,8 @@ urlpatterns = [
     path('free-mock-tests/<int:pk>/finish/', views.FreeMockTestViewSet.as_view({'post': 'finish'}), name='free-mock-finish'),
     path('free-mock-tests/history/', views.FreeMockTestViewSet.as_view({'get': 'history'}), name='free-mock-history'),
 
+    # question upload
+    path("upload-questions/", views.UploadCSVAPIView.as_view(), name="upload-questions"),
+
 ]
     
