@@ -458,26 +458,45 @@ class UserSubscriptionViewSet(viewsets.GenericViewSet):
         except SubscriptionPlan.DoesNotExist:
             return Response({"error": "Subscription plan not found."}, status=status.HTTP_404_NOT_FOUND)
 
-
-        with transaction.atomic(): # Ensure atomicity of database operations
-            user_subscription, created = UserSubscription.objects.get_or_create(user=request.user)
+        with transaction.atomic():  # Ensure atomicity of database operations
+            user = request.user
+            user_subscription, created = UserSubscription.objects.get_or_create(user=user)
 
             # Update subscription details
             user_subscription.plan = plan
             user_subscription.is_active = True
-            user_subscription.start_date = timezone.now() # Reset start date for new subscription/renewal
+            user_subscription.start_date = timezone.now()
             user_subscription.last_renewed = timezone.now()
 
             # Calculate end_date based on plan duration
             if plan.duration_days:
                 user_subscription.end_date = user_subscription.start_date + timedelta(days=plan.duration_days)
             else:
-                user_subscription.end_date = None # Lifetime access
+                user_subscription.end_date = None  # Lifetime access
 
             user_subscription.save()
 
+            # Only update UserEvaluation.LeftMockTest if lifetime plan
+            if plan.duration_days is None:
+                try:
+                    profile = request.user.profile  # ✅ get the Profile instance
+                    evaluation = UserEvaluation.objects.get(user=profile)
+                except UserEvaluation.DoesNotExist:
+                    # Optionally create the evaluation record
+                    evaluation = UserEvaluation.objects.create(
+                        user=profile,
+                        PracticeCompleted='0',
+                        QuestionAnswered='0',
+                        CorrectAnswered='0',
+                        WrongAnswered='0'
+                    )
+
+                evaluation.LeftMockTest = 'Unlimited'
+                evaluation.save()
+
             serializer = self.get_serializer(user_subscription)
             return Response(serializer.data, status=status.HTTP_200_OK if not created else status.HTTP_201_CREATED)
+
 
     @action(detail=False, methods=['post'])
     def cancel(self, request):
