@@ -446,9 +446,17 @@ class UserSubscriptionViewSet(viewsets.GenericViewSet):
 class PracticeChapterList(APIView):
     def get(self, request):
         chapters = Chapter.objects.all()
-        serializer = ChapterModelSerializer(chapters, many=True)
-        return Response(serializer.data)
+        data = []
 
+        for chapter in chapters:
+            total_questions = Question.objects.filter(chapter=chapter, type = "practice").count()
+            data.append({
+                'name': chapter.name,
+                'description': chapter.description,
+                'total_questions': total_questions
+            })
+
+        return Response(data)
 
 
 PAGE_SIZE = 1
@@ -583,7 +591,7 @@ class MockTestViewSet(viewsets.ViewSet):
 
     @action(detail=False, methods=['post'])
     def start(self, request):
-        total_questions = 14
+        total_questions = 24
         questions = list(Question.objects.filter(type = "mockTest"))
 
         if len(questions) < total_questions:
@@ -674,7 +682,7 @@ class FreeMockTestViewSet(viewsets.ViewSet):
 
     @action(detail=False, methods=['post'])
     def start(self, request):
-        total_questions = 14
+        total_questions = 24
         questions = list(Question.objects.filter(type = "freeMockTest"))
         if len(questions) < total_questions:
             return Response({'error': 'Not enough questions to start the test.'}, status=status.HTTP_400_BAD_REQUEST)
