@@ -5,7 +5,7 @@ from django.contrib.auth import authenticate
 from datetime import timedelta
 import random
 
-from main.models import Lesson, Chapter, Profile, GuidesSupport, HomePage, GuideSupportContent, LessonContent, UserEvaluation, Question, QuestionOption, MockTestSession, MockTestAnswer, FreeMockTestSession, FreeMockTestAnswer, ChapterProgress
+from main.models import Lesson, Chapter, Profile, GuidesSupport, HomePage, GuideSupportContent, LessonContent, UserEvaluation, Question, QuestionOption, MockTestSession, MockTestAnswer, FreeMockTestSession, FreeMockTestAnswer, ChapterProgress, LessonProgress
 from subscriptions.models import SubscriptionPlan, UserSubscription
 from . serializers import LessonModelSerializers, ChapterModelSerializer, RegisterSerializer, ProfileModelSerializer, GuidesSupportModelSerializer, HomePageModelSerializer, GuideSupportContentModelSerializer, LessonContentModelSerializer, UserEvaluationModelSerializer, SubscriptionPlanSerializer, UserSubscriptionSerializer, QuestionOptionSerializer, QuestionSerializer, StartMockTestSerializer, MockTestAnswerSerializer, MockTestResultSerializer, FreeMockTestAnswerSerializer, FreeMockTestResultSerializer, FreeStartMockTestSerializer
 
@@ -130,7 +130,6 @@ class UserEvaluationView(APIView):
         user = request.user
         chapter_progress_qs = ChapterProgress.objects.filter(user=user).select_related("chapter")
 
-        # Filter chapters that have practice questions
         valid_progress = [
             p for p in chapter_progress_qs
             if p.chapter.questions.filter(type="practice").exists()
@@ -302,23 +301,34 @@ class ChapterListView(APIView):
     
 
 class ChapterLessonsView(APIView):
+    permission_classes = [IsAuthenticated]
+
     def get(self, request, pk):
         chapter = get_object_or_404(Chapter, id=pk)
         lessons = Lesson.objects.filter(chapter=chapter).reverse()
-        serializer = LessonModelSerializers(lessons, many=True)
-        return Response(serializer.data, status=status.HTTP_200_OK)
+        data = []
+
+        for lesson in lessons:
+            progress = LessonProgress.objects.filter(user=request.user, lesson=lesson).first()
+            percentage = progress.completion_percentage if progress else 0.0
+
+            data.append({
+                'lesson_id': lesson.id,
+                'name': lesson.name,
+                'title': lesson.title,
+                'completion_percentage': round(percentage, 2),
+                'created': lesson.created,
+            })
+
+        return Response(data, status=status.HTTP_200_OK)
     
 
-
 class ChapterLessonDetailView(APIView):
-    """
-    GET http://127.0.0.1:8000/chapters/1/1/?step=0
-    Each step returns 10 lesson contents
-    """
+    permission_classes = [IsAuthenticated]  # To ensure request.user is available
+
     def get(self, request, chapter_id, lesson_id):
         lesson = get_object_or_404(Lesson, id=lesson_id, chapter_id=chapter_id)
 
-        # Parse step (pagination)
         try:
             step = int(request.query_params.get('step', 0))
         except (TypeError, ValueError):
@@ -334,18 +344,25 @@ class ChapterLessonDetailView(APIView):
         if start_index >= total:
             return Response({"detail": "No content available for this page."}, status=status.HTTP_404_NOT_FOUND)
 
-        # Slice queryset for the current page
         current_page_items = lesson_qs[start_index:end_index]
+
+        user = request.user
+        progress_obj, _ = LessonProgress.objects.get_or_create(user=user, lesson=lesson)
+
+        for content in current_page_items:
+            if content not in progress_obj.completed_contents.all():
+                progress_obj.completed_contents.add(content)
+        progress_obj.update_completion()
+
         serializer = LessonContentModelSerializer(current_page_items, many=True)
 
         return Response({
             "step": step,
-            # "page_size": PAGE_SIZE,
             "total_items": total,
-            # "has_next": end_index < total,
-            # "has_prev": start_index > 0,
+            # "completion_percentage": progress_obj.completion_percentage,
             "content": serializer.data
         }, status=status.HTTP_200_OK)
+
 
 
     
@@ -353,7 +370,7 @@ class ChapterLessonDetailView(APIView):
     
 class GuideSupportView(APIView):
     """
-    GET /api/guides/
+    GET /guides/
     """
     def get(self, request):
         guides = GuidesSupport.objects.all().order_by('id')
@@ -468,21 +485,21 @@ class UserSubscriptionViewSet(viewsets.GenericViewSet):
             user_subscription.start_date = timezone.now()
             user_subscription.last_renewed = timezone.now()
 
-            # Calculate end_date based on plan duration
+        
             if plan.duration_days:
                 user_subscription.end_date = user_subscription.start_date + timedelta(days=plan.duration_days)
             else:
-                user_subscription.end_date = None  # Lifetime access
+                user_subscription.end_date = None 
 
             user_subscription.save()
 
-            # Only update UserEvaluation.LeftMockTest if lifetime plan
+            
             if plan.duration_days is None:
                 try:
-                    profile = request.user.profile  # ✅ get the Profile instance
+                    profile = request.user.profile 
                     evaluation = UserEvaluation.objects.get(user=profile)
                 except UserEvaluation.DoesNotExist:
-                    # Optionally create the evaluation record
+                
                     evaluation = UserEvaluation.objects.create(
                         user=profile,
                         PracticeCompleted='0',

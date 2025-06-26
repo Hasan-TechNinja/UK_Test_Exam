@@ -79,7 +79,25 @@ class LessonContent(models.Model):
     def __str__(self):
         return self.lesson.name
 
+class LessonProgress(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='lesson_progress')
+    lesson = models.ForeignKey(Lesson, on_delete=models.CASCADE, related_name='progress')
+    completed_contents = models.ManyToManyField(LessonContent, blank=True)
+    completion_percentage = models.FloatField(default=0.0)
+
+    class Meta:
+        unique_together = ('user', 'lesson')
+
+    def __str__(self):
+        return f"{self.user.username} - {self.lesson.name} ({self.completion_percentage}%)"
+
+    def update_completion(self):
+        total = self.lesson.lessoncontent_set.count()
+        completed = self.completed_contents.count()
+        self.completion_percentage = (completed / total * 100) if total else 0.0
+        self.save()
     
+
 
 class GuidesSupport(models.Model):
     name = models.CharField(max_length=150, default="")
