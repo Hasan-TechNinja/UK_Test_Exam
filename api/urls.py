@@ -57,6 +57,7 @@ urlpatterns = [
     path('practice/answer/', views.SubmitAnswerView.as_view()),
 
     # mock test
+    path('free-mock-test/summary/', views.MockTestHomeViewSet.as_view(), name='free-mock-test-summary'),
     path('mock-tests/start/', views.MockTestViewSet.as_view({'post': 'start'})),
     path('mock-tests/<int:pk>/', mock_test),
     path('mock-tests/<int:pk>/answer/', views.MockTestViewSet.as_view({'post': 'answer'})),

@@ -1,5 +1,5 @@
 from django.contrib import admin
-from . models import Chapter, Lesson, Profile, GuidesSupport, GuideSupportContent, LessonContent, HomePage, QuestionOption, Question, UserEvaluation, MockTestAnswer, MockTestSession
+from . models import Chapter, Lesson, Profile, GuidesSupport, GuideSupportContent, LessonContent, HomePage, QuestionOption, Question, UserEvaluation, MockTestAnswer, MockTestSession, FreeMockTestSession, FreeMockTestAnswer
 from rest_framework.authtoken.models import Token
 
 # Register your models here.
@@ -105,3 +105,19 @@ class MockTestAnswerAdmin(admin.ModelAdmin):
         'id', 'session', 'question', 'is_correct'
     )
 admin.site.register(MockTestAnswer, MockTestAnswerAdmin)
+
+
+
+class FreeMockTestSessionAdmin(admin.ModelAdmin):
+    list_display = (
+        'id', 'user', 'started_at', 'finished_at', 'score', 'total_questions', 'duration_minutes', 
+    )
+admin.site.register(FreeMockTestSession, FreeMockTestSessionAdmin)
+
+
+
+class FreeMockTestAnswerAdmin(admin.ModelAdmin):
+    list_display = (
+        'id', 'session', 'question', 'is_correct'
+    )
+admin.site.register(FreeMockTestAnswer, FreeMockTestAnswerAdmin)

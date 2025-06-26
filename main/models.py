@@ -149,7 +149,6 @@ class MockTestAnswer(models.Model):
     is_correct = models.BooleanField(default=False)
     
     
-    
 class FreeMockTestSession(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     started_at = models.DateTimeField(auto_now_add=True)

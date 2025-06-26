@@ -16,11 +16,8 @@ from rest_framework.authtoken.models import Token
 from rest_framework.permissions import IsAuthenticated, IsAdminUser, AllowAny
 from rest_framework.authentication import TokenAuthentication
 from rest_framework.decorators import api_view, authentication_classes, permission_classes, action
-from django.utils import timezone
-import random
 import csv
 from io import TextIOWrapper
-from django.db import transaction
 
 #  Create your views here.
 
@@ -556,6 +553,31 @@ class SubmitAnswerView(APIView):
 
 # ________-----------------------Mock Test-----------------______________
 
+from django.db.models import Max
+class MockTestHomeViewSet(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        user = request.user
+
+        latest_session = MockTestSession.objects.filter(user=user).order_by('-started_at').first()
+        total_questions = latest_session.total_questions if latest_session else 24
+        duration_minutes = latest_session.duration_minutes if latest_session else 45
+
+        total_tests = MockTestSession.objects.filter(user=user, finished_at__isnull=False).count()
+        best_score = MockTestSession.objects.filter(
+            user=user, finished_at__isnull=False, score__isnull=False
+        ).aggregate(Max('score'))['score__max'] or 0
+
+        return Response({
+            "total_questions": total_questions,
+            "duration_minutes": duration_minutes,
+            "total_tests_taken": total_tests,
+            "best_score": best_score
+        })
+
+
+
 class MockTestViewSet(viewsets.ViewSet):
     permission_classes = [IsAuthenticated]
 
@@ -729,7 +751,7 @@ class FreeMockTestViewSet(viewsets.ViewSet):
     # -----------------------Question upload-------------------------------
 
 class UploadCSVAPIView(APIView):
-    permission_classes = [permissions.IsAdminUser]  # Or IsAuthenticated
+    permission_classes = [permissions.IsAdminUser, ]
 
     def post(self, request, *args, **kwargs):
         csv_file = request.FILES.get("file")
