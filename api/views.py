@@ -60,7 +60,7 @@ class ProfileView(generics.RetrieveUpdateAPIView):
     def get_object(self):
         return self.request.user.profile
     
-
+'''
 class UserEvaluationView(APIView):
     def get(self, request):
         try:
@@ -81,10 +81,71 @@ class UserEvaluationView(APIView):
         else:
             correct_percentage = wrong_percentage = 0.0
 
+        user = request.user
+        chapter_progress_qs = ChapterProgress.objects.filter(user=user)
+
+        if chapter_progress_qs.exists():
+            total_percent = sum(p.completion_percentage for p in chapter_progress_qs)
+            chapter_count = chapter_progress_qs.count()
+            overall_practice_completion = round(total_percent / chapter_count, 2)
+        else:
+            overall_practice_completion = 0.0
+            
+
         response_data = {
             "MockTestTaken": evaluation.MockTestTaken,
             "LeftMockTest": evaluation.LeftMockTest,
-            "PracticeCompleted": evaluation.PracticeCompleted,
+            "PracticeCompleted": overall_practice_completion,
+            "QuestionAnswered": total,
+            "CorrectAnsweredPercentage": correct_percentage,
+            "WrongAnsweredPercentage": wrong_percentage,
+        }
+
+        return Response(response_data, status=status.HTTP_200_OK)
+'''
+
+
+class UserEvaluationView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        try:
+            evaluation = UserEvaluation.objects.get(user=request.user.profile)
+        except UserEvaluation.DoesNotExist:
+            return Response({'error': 'Evaluation not found.'}, status=status.HTTP_404_NOT_FOUND)
+
+        try:
+            total = int(evaluation.QuestionAnswered or 0)
+            correct = int(evaluation.CorrectAnswered or 0)
+            wrong = int(evaluation.WrongAnswered or 0)
+        except ValueError:
+            total = correct = wrong = 0
+
+        if total > 0:
+            correct_percentage = round((correct / total) * 100, 2)
+            wrong_percentage = round((wrong / total) * 100, 2)
+        else:
+            correct_percentage = wrong_percentage = 0.0
+
+        user = request.user
+        chapter_progress_qs = ChapterProgress.objects.filter(user=user).select_related("chapter")
+
+        # Filter chapters that have practice questions
+        valid_progress = [
+            p for p in chapter_progress_qs
+            if p.chapter.questions.filter(type="practice").exists()
+        ]
+
+        if valid_progress:
+            total_percent = sum(p.completion_percentage for p in valid_progress)
+            overall_practice_completion = round(total_percent / len(valid_progress), 2)
+        else:
+            overall_practice_completion = 0.0
+
+        response_data = {
+            "MockTestTaken": evaluation.MockTestTaken,
+            "LeftMockTest": evaluation.LeftMockTest,
+            "PracticeCompleted": overall_practice_completion,
             "QuestionAnswered": total,
             "CorrectAnsweredPercentage": correct_percentage,
             "WrongAnsweredPercentage": wrong_percentage,
