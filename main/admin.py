@@ -1,5 +1,5 @@
 from django.contrib import admin
-from . models import Chapter, Lesson, Profile, GuidesSupport, GuideSupportContent, LessonContent, HomePage, QuestionOption, Question, UserEvaluation, MockTestAnswer, MockTestSession, FreeMockTestSession, FreeMockTestAnswer
+from . models import Chapter, Lesson, Profile, GuidesSupport, GuideSupportContent, LessonContent, HomePage, QuestionOption, Question, UserEvaluation, MockTestAnswer, MockTestSession, FreeMockTestSession, FreeMockTestAnswer, ChapterProgress
 from rest_framework.authtoken.models import Token
 
 # Register your models here.
@@ -121,3 +121,9 @@ class FreeMockTestAnswerAdmin(admin.ModelAdmin):
         'id', 'session', 'question', 'is_correct'
     )
 admin.site.register(FreeMockTestAnswer, FreeMockTestAnswerAdmin)
+
+
+@admin.register(ChapterProgress)
+class ChapterProgressAdmin(admin.ModelAdmin):
+    list_display = ('user', 'chapter', 'completion_percentage')
+    list_filter = ('chapter',)

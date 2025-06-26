@@ -130,6 +130,24 @@ class QuestionOption(models.Model):
         return f"Q{self.question.id}: {self.text}"
         # return f"Q{self.question.id} - {self.question.question_text[:40]}...: {self.text}"
     
+class ChapterProgress(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='chapter_progress')
+    chapter = models.ForeignKey(Chapter, on_delete=models.CASCADE, related_name='progress')
+    completed_questions = models.ManyToManyField(Question, blank=True)
+    completion_percentage = models.FloatField(default=0.0)
+
+    class Meta:
+        unique_together = ('user', 'chapter')  # One progress entry per user per chapter
+
+    def __str__(self):
+        return f"{self.user.username} - {self.chapter.name} ({self.completion_percentage}%)"
+
+    def update_completion(self):
+        total_questions = self.chapter.questions.filter(type="practice").count()
+        completed = self.completed_questions.filter(type="practice").count()
+        self.completion_percentage = (completed / total_questions * 100) if total_questions else 0.0
+        self.save()
+
 
 class MockTestSession(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)

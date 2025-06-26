@@ -5,7 +5,7 @@ from django.contrib.auth import authenticate
 from datetime import timedelta
 import random
 
-from main.models import Lesson, Chapter, Profile, GuidesSupport, HomePage, GuideSupportContent, LessonContent, UserEvaluation, Question, QuestionOption, MockTestSession, MockTestAnswer, FreeMockTestSession, FreeMockTestAnswer
+from main.models import Lesson, Chapter, Profile, GuidesSupport, HomePage, GuideSupportContent, LessonContent, UserEvaluation, Question, QuestionOption, MockTestSession, MockTestAnswer, FreeMockTestSession, FreeMockTestAnswer, ChapterProgress
 from subscriptions.models import SubscriptionPlan, UserSubscription
 from . serializers import LessonModelSerializers, ChapterModelSerializer, RegisterSerializer, ProfileModelSerializer, GuidesSupportModelSerializer, HomePageModelSerializer, GuideSupportContentModelSerializer, LessonContentModelSerializer, UserEvaluationModelSerializer, SubscriptionPlanSerializer, UserSubscriptionSerializer, QuestionOptionSerializer, QuestionSerializer, StartMockTestSerializer, MockTestAnswerSerializer, MockTestResultSerializer, FreeMockTestAnswerSerializer, FreeMockTestResultSerializer, FreeStartMockTestSerializer
 
@@ -442,21 +442,34 @@ class UserSubscriptionViewSet(viewsets.GenericViewSet):
 
 #-------------------------------------Practice Chapter view-------------------------------------
 
-
 class PracticeChapterList(APIView):
+    permission_classes = [IsAuthenticated]
+
     def get(self, request):
+        user = request.user
         chapters = Chapter.objects.all()
         data = []
 
         for chapter in chapters:
-            total_questions = Question.objects.filter(chapter=chapter, type = "practice").count()
+            total_questions = Question.objects.filter(chapter=chapter, type="practice").count()
+
+            # Get user's progress for this chapter
+            try:
+                progress = ChapterProgress.objects.get(user=user, chapter=chapter)
+                completion_percentage = round(progress.completion_percentage, 2)
+            except ChapterProgress.DoesNotExist:
+                completion_percentage = 0.0
+
             data.append({
                 'name': chapter.name,
                 'description': chapter.description,
-                'total_questions': total_questions
+                'total_questions': total_questions,
+                'completion_percentage': completion_percentage
             })
 
         return Response(data)
+
+
 
 
 PAGE_SIZE = 1
@@ -470,8 +483,7 @@ class PracticeQuestionStepView(APIView):
         try:
             step = int(request.query_params.get("step", 0))
         except (TypeError, ValueError):
-            return Response({"detail": "step must be an integer."},
-                            status=status.HTTP_400_BAD_REQUEST)
+            return Response({"detail": "step must be an integer."}, status=status.HTTP_400_BAD_REQUEST)
 
         qs     = Question.objects.filter(type = "practice", chapter_id=chapter_id).order_by("id")
         total  = qs.count()
@@ -510,7 +522,7 @@ class SubmitAnswerView(APIView):
 
         # Validate question
         try:
-            question = Question.objects.get(id=question_id, chapter_id=chapter_id)
+            question = Question.objects.get(type = "practice", id=question_id, chapter_id=chapter_id)
         except Question.DoesNotExist:
             return Response({"detail": "Invalid question."}, status=status.HTTP_400_BAD_REQUEST)
 
@@ -518,6 +530,13 @@ class SubmitAnswerView(APIView):
         is_correct  = selected_options == correct_set
 
         # ----- you can persist attempt here if you wish -----
+        user = request.user
+        progress_obj, _ = ChapterProgress.objects.get_or_create(user=user, chapter_id=chapter_id)
+
+        # Mark this question as completed if not already
+        if question not in progress_obj.completed_questions.all():
+            progress_obj.completed_questions.add(question)
+            progress_obj.update_completion()
 
         # Prepare result for this question
         question_result = {
@@ -529,7 +548,7 @@ class SubmitAnswerView(APIView):
         }
 
         # Determine next step
-        qs    = Question.objects.filter(chapter_id=chapter_id).order_by("id")
+        qs    = Question.objects.filter(type = "practice", chapter_id=chapter_id).order_by("id")
         total = qs.count()
         next_step = step + 1
 
@@ -549,6 +568,7 @@ class SubmitAnswerView(APIView):
         return Response({
             "completed": False,
             "question_result": question_result,
+            "completion_percentage": progress_obj.completion_percentage,
             "next_question": {
                 "step": next_step,
                 "total": total,
