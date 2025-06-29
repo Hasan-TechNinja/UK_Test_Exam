@@ -265,108 +265,82 @@ class HomePageView(APIView):
         serializer = HomePageModelSerializer(home, many = True)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
+
+
+
+from django.contrib.auth.models import AnonymousUser
+
 class ChapterListView(APIView):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [AllowAny]  # Allow both authenticated and unauthenticated users
 
     def get(self, request):
         chapters = Chapter.objects.all().order_by('id')
         data = []
 
         for chapter in chapters:
-            lessons = Lesson.objects.filter(chapter=chapter).order_by('id')  # ascending order
+            lessons = Lesson.objects.filter(chapter=chapter).order_by('id')
             total_lessons = lessons.count()
 
             completed_lessons = 0
-            lesson_ids = []
+            lesson_ids = [str(lesson.id) for lesson in lessons]
 
-            for lesson in lessons:
-                lesson_ids.append(str(lesson.id))  # or use lesson.id for integers
-                progress = LessonProgress.objects.filter(user=request.user, lesson=lesson).first()
-                if progress and progress.completion_percentage == 100.0:
-                    completed_lessons += 1
+            # Only calculate progress if the user is authenticated
+            show_progress = request.user and not isinstance(request.user, AnonymousUser)
 
-            chapter_completion = (completed_lessons / total_lessons * 100) if total_lessons > 0 else 0.0
+            if show_progress:
+                for lesson in lessons:
+                    progress = LessonProgress.objects.filter(user=request.user, lesson=lesson).first()
+                    if progress and progress.completion_percentage == 100.0:
+                        completed_lessons += 1
+                chapter_completion = (completed_lessons / total_lessons * 100) if total_lessons > 0 else 0.0
+                completion_percentage = round(chapter_completion, 2)
+            else:
+                completion_percentage = None  # Or omit the field entirely if you prefer
 
-            data.append({
+            chapter_data = {
                 'chapter_id': chapter.id,
                 'name': chapter.name,
                 'description': chapter.description,
                 'created': chapter.created,
-                'completion_percentage': round(chapter_completion, 2),
                 'lessons': lesson_ids,
-            })
+            }
+
+            if show_progress:
+                chapter_data['completion_percentage'] = completion_percentage
+
+            data.append(chapter_data)
 
         return Response(data, status=status.HTTP_200_OK)
-
 
     
 
 class ChapterLessonsView(APIView):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [AllowAny]  # Allow all users to access
 
     def get(self, request, pk):
         chapter = get_object_or_404(Chapter, id=pk)
         lessons = Lesson.objects.filter(chapter=chapter).reverse()
         data = []
 
-        for lesson in lessons:
-            progress = LessonProgress.objects.filter(user=request.user, lesson=lesson).first()
-            percentage = progress.completion_percentage if progress else 0.0
+        show_progress = request.user and not isinstance(request.user, AnonymousUser)
 
-            data.append({
+        for lesson in lessons:
+            lesson_data = {
                 'lesson_id': lesson.id,
                 'name': lesson.name,
                 'title': lesson.title,
-                'completion_percentage': round(percentage, 2),
                 'created': lesson.created,
-            })
+            }
+
+            if show_progress:
+                progress = LessonProgress.objects.filter(user=request.user, lesson=lesson).first()
+                percentage = progress.completion_percentage if progress else 0.0
+                lesson_data['completion_percentage'] = round(percentage, 2)
+
+            data.append(lesson_data)
 
         return Response(data, status=status.HTTP_200_OK)
-    
-'''
-class ChapterLessonDetailView(APIView):
-    permission_classes = [IsAuthenticated]  # To ensure request.user is available
 
-    def get(self, request, chapter_id, lesson_id):
-        lesson = get_object_or_404(Lesson, id=lesson_id, chapter_id=chapter_id)
-
-        try:
-            step = int(request.query_params.get('step', 0))
-        except (TypeError, ValueError):
-            return Response({"detail": "Invalid step value"}, status=status.HTTP_400_BAD_REQUEST)
-
-        PAGE_SIZE = 10
-        start_index = step * PAGE_SIZE
-        end_index = start_index + PAGE_SIZE
-
-        lesson_qs = LessonContent.objects.filter(lesson=lesson).order_by('id')
-        glossary_list = lesson_qs.get_glossary_string_list()
-        total = lesson_qs.count()
-
-        if start_index >= total:
-            return Response({"detail": "No content available for this page."}, status=status.HTTP_404_NOT_FOUND)
-
-        current_page_items = lesson_qs[start_index:end_index]
-
-        user = request.user
-        progress_obj, _ = LessonProgress.objects.get_or_create(user=user, lesson=lesson)
-
-        for content in current_page_items:
-            if content not in progress_obj.completed_contents.all():
-                progress_obj.completed_contents.add(content)
-        progress_obj.update_completion()
-
-        serializer = LessonContentModelSerializer(current_page_items, many=True)
-
-        return Response({
-            "step": step,
-            "total_items": total,
-            # "completion_percentage": progress_obj.completion_percentage,
-            "content": serializer.data,
-            'glossary_list' : glossary_list
-
-        }, status=status.HTTP_200_OK)
-'''
 
 class ChapterLessonDetailView(APIView):
     permission_classes = [IsAuthenticated]
