@@ -4,6 +4,7 @@ from django.utils import timezone
 from django.contrib.auth import authenticate
 from datetime import timedelta
 import random
+from django.db.models import Max
 
 from main.models import Lesson, Chapter, Profile, GuidesSupport, HomePage, GuideSupportContent, LessonContent, UserEvaluation, Question, QuestionOption, MockTestSession, MockTestAnswer, FreeMockTestSession, FreeMockTestAnswer, ChapterProgress, LessonProgress
 from subscriptions.models import SubscriptionPlan, UserSubscription
@@ -570,33 +571,37 @@ class UserSubscriptionViewSet(viewsets.GenericViewSet):
 #-------------------------------------Practice Chapter view-------------------------------------
 
 class PracticeChapterList(APIView):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [AllowAny]  # Allow both authenticated and unauthenticated users
 
     def get(self, request):
         user = request.user
+        is_authenticated = user and not isinstance(user, AnonymousUser)
+
         chapters = Chapter.objects.all()
         data = []
 
         for chapter in chapters:
             total_questions = Question.objects.filter(chapter=chapter, type="practice").count()
 
-            # Get user's progress for this chapter
-            try:
-                progress = ChapterProgress.objects.get(user=user, chapter=chapter)
-                completion_percentage = round(progress.completion_percentage, 2)
-            except ChapterProgress.DoesNotExist:
-                completion_percentage = 0.0
-
-            data.append({
+            chapter_data = {
                 'id': chapter.id,
                 'name': chapter.name,
                 'description': chapter.description,
                 'total_questions': total_questions,
-                'completion_percentage': completion_percentage
-            })
+            }
 
-        return Response(data)
+            if is_authenticated:
+                try:
+                    progress = ChapterProgress.objects.get(user=user, chapter=chapter)
+                    completion_percentage = round(progress.completion_percentage, 2)
+                except ChapterProgress.DoesNotExist:
+                    completion_percentage = 0.0
 
+                chapter_data['completion_percentage'] = completion_percentage
+
+            data.append(chapter_data)
+
+        return Response(data, status=status.HTTP_200_OK)
 
 
 '''
@@ -789,30 +794,44 @@ class SubmitAnswersView(APIView):
         }, status=status.HTTP_200_OK)
 
 
-# ________-----------------------Mock Test-----------------______________
+# ______________-----------------------Mock Test-----------------______________
 
-from django.db.models import Max
+
 class MockTestHomeViewSet(APIView):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [AllowAny]
 
     def get(self, request):
         user = request.user
+        is_logged_in = user.is_authenticated
 
-        latest_session = MockTestSession.objects.filter(user=user).order_by('-started_at').first()
+        if is_logged_in:
+            latest_session = MockTestSession.objects.filter(user=user).order_by('-started_at').first()
+        else:
+            latest_session = None
+
         total_questions = latest_session.total_questions if latest_session else 24
         duration_minutes = latest_session.duration_minutes if latest_session else 45
 
-        total_tests = MockTestSession.objects.filter(user=user, finished_at__isnull=False).count()
-        best_score = MockTestSession.objects.filter(
-            user=user, finished_at__isnull=False, score__isnull=False
-        ).aggregate(Max('score'))['score__max'] or 0
+        response_data = {
+            "mock_test_config": {
+                "total_questions": total_questions,
+                "duration_minutes": duration_minutes
+            }
+        }
 
-        return Response({
-            "total_questions": total_questions,
-            "duration_minutes": duration_minutes,
-            "total_tests_taken": total_tests,
-            "best_score": best_score
-        })
+        if is_logged_in:
+            total_tests = MockTestSession.objects.filter(user=user, finished_at__isnull=False).count()
+            best_score = MockTestSession.objects.filter(
+                user=user, finished_at__isnull=False, score__isnull=False
+            ).aggregate(Max('score'))['score__max'] or 0
+
+            response_data["view_past_tests"] = {
+                "total_tests_taken": total_tests,
+                "best_score": f"{best_score}%"
+            }
+
+        return Response(response_data, status=status.HTTP_200_OK)
+
 
 
 
