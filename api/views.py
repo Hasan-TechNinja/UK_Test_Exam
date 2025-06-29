@@ -834,7 +834,7 @@ class MockTestHomeViewSet(APIView):
 
 
 
-
+'''
 class MockTestViewSet(viewsets.ViewSet):
     permission_classes = [IsAuthenticated]
 
@@ -923,6 +923,164 @@ class MockTestViewSet(viewsets.ViewSet):
     def history(self, request):
         sessions = MockTestSession.objects.filter(user=request.user, finished_at__isnull=False).order_by('-finished_at')
         return Response(MockTestResultSerializer(sessions, many=True).data)
+'''
+
+class MockTestViewSet(viewsets.ViewSet):
+    permission_classes = [IsAuthenticated]
+
+    @action(detail=False, methods=['post'])
+    def start(self, request):
+        total_questions = 24
+        questions = list(Question.objects.filter(type="mockTest"))
+
+        if len(questions) < total_questions:
+            return Response({'error': 'Not enough questions to start the test.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        selected_questions = random.sample(questions, total_questions)
+        session = MockTestSession.objects.create(user=request.user, total_questions=total_questions)
+
+        answer_map = []
+        for q in selected_questions:
+            MockTestAnswer.objects.create(session=session, question=q)
+            answer_map.append({
+                "question_id": q.id,
+                "question_text": q.question_text,  # fixed field name
+                "image": q.image.url if q.image else None,
+                "multiple_answers": q.multiple_answers,
+                "options": list(q.options.values('id', 'text')),
+            })
+
+        # Update UserEvaluation
+        profile = request.user.profile
+        evaluation, _ = UserEvaluation.objects.get_or_create(user=profile)
+        evaluation.MockTestTaken += 1
+        evaluation.save(update_fields=['MockTestTaken'])
+
+        return Response({
+            "session_id": session.id,
+            "questions": answer_map
+        }, status=status.HTTP_200_OK)
+    
+    
+    def retrieve(self, request, pk=None):
+        session = get_object_or_404(MockTestSession, pk=pk, user=request.user)
+        answers = session.answers.select_related('question').prefetch_related('selected_choices', 'question__options')
+        data = []
+        for a in answers:
+            data.append({
+                'question': QuestionSerializer(a.question).data,
+                'selected_choices': list(a.selected_choices.values_list('id', flat=True)),
+                'is_correct': a.is_correct
+            })
+        return Response({'session_id': session.id, 'answers': data})
+    
+
+    # single answer submit features
+
+    @action(detail=True, methods=['post'])
+    def answer(self, request, pk=None):
+        session = get_object_or_404(MockTestSession, pk=pk, user=request.user)
+        question_id = request.data.get('question')
+        choice_ids = request.data.get('selected_choice_ids', [])
+
+        if question_id is None or not isinstance(choice_ids, list):
+            return Response({'error': 'Both "question" and "selected_choice_ids" are required.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            answer = MockTestAnswer.objects.get(session=session, question_id=question_id)
+        except MockTestAnswer.DoesNotExist:
+            return Response({'error': 'Question not found in this session.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        valid_choice_ids = set(answer.question.options.values_list('id', flat=True))
+        if not set(choice_ids).issubset(valid_choice_ids):
+            return Response({'error': 'One or more choices are invalid for this question.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        answer.selected_choices.set(choice_ids)
+        correct_ids = set(answer.question.options.filter(is_correct=True).values_list('id', flat=True))
+        answer.is_correct = set(choice_ids) == correct_ids
+        answer.save()
+
+        return Response({'correct': answer.is_correct})
+    
+
+    @action(detail=True, methods=['post'])
+    def finish(self, request, pk=None):
+        session = get_object_or_404(MockTestSession, pk=pk, user=request.user)
+        total = session.answers.count()
+        correct = session.answers.filter(is_correct=True).count()
+        wrong = total - correct
+
+        session.score = round((correct / total) * 100)
+        session.finished_at = timezone.now()
+        session.save()
+
+        # Update UserEvaluation
+        profile = request.user.profile
+        evaluation, _ = UserEvaluation.objects.get_or_create(user=profile)
+
+        evaluation.QuestionAnswered = str(int(evaluation.QuestionAnswered or "0") + total)
+        evaluation.CorrectAnswered = str(int(evaluation.CorrectAnswered or "0") + correct)
+        evaluation.WrongAnswered = str(int(evaluation.WrongAnswered or "0") + wrong)
+        evaluation.save(update_fields=['QuestionAnswered', 'CorrectAnswered', 'WrongAnswered'])
+
+        return Response(MockTestResultSerializer(session).data)
+
+    @action(detail=False, methods=['get'])
+    def history(self, request):
+        sessions = MockTestSession.objects.filter(user=request.user, finished_at__isnull=False).order_by('-finished_at')
+        return Response(MockTestResultSerializer(sessions, many=True).data)
+
+
+    @action(detail=True, methods=['post'])
+    def submit_all_answers(self, request, pk=None):
+        session = get_object_or_404(MockTestSession, pk=pk, user=request.user)
+        submitted_answers = request.data.get('answers', [])
+
+        if not isinstance(submitted_answers, list):
+            return Response({'error': 'answers must be a list of question and choices.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        correct_count = 0
+        total = session.answers.count()
+
+        for item in submitted_answers:
+            question_id = item.get('question')
+            choice_ids = item.get('selected_choice_ids', [])
+
+            if not question_id or not isinstance(choice_ids, list):
+                continue  # Skip invalid item
+
+            try:
+                answer = MockTestAnswer.objects.get(session=session, question_id=question_id)
+            except MockTestAnswer.DoesNotExist:
+                continue
+
+            valid_choices = set(answer.question.options.values_list('id', flat=True))
+            if not set(choice_ids).issubset(valid_choices):
+                continue
+
+            answer.selected_choices.set(choice_ids)
+            correct_ids = set(answer.question.options.filter(is_correct=True).values_list('id', flat=True))
+            answer.is_correct = set(choice_ids) == correct_ids
+            answer.save()
+
+            if answer.is_correct:
+                correct_count += 1
+
+        # Finalize the session
+        session.score = round((correct_count / total) * 100)
+        session.finished_at = timezone.now()
+        session.save()
+
+        # Update evaluation
+        profile = request.user.profile
+        evaluation, _ = UserEvaluation.objects.get_or_create(user=profile)
+        wrong_count = total - correct_count
+        evaluation.QuestionAnswered = str(int(evaluation.QuestionAnswered or "0") + total)
+        evaluation.CorrectAnswered = str(int(evaluation.CorrectAnswered or "0") + correct_count)
+        evaluation.WrongAnswered = str(int(evaluation.WrongAnswered or "0") + wrong_count)
+        evaluation.save(update_fields=['QuestionAnswered', 'CorrectAnswered', 'WrongAnswered'])
+
+        return Response(MockTestResultSerializer(session).data, status=status.HTTP_200_OK)
 
 
 

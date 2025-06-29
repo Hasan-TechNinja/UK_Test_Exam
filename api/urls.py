@@ -7,7 +7,11 @@ router = DefaultRouter()
 router.register(r'subscription-plans', views.SubscriptionPlanViewSet)
 router.register(r'user-subscriptions', views.UserSubscriptionViewSet, basename='user-subscription')
 
-mock_test = views.MockTestViewSet.as_view({'get': 'retrieve'})
+# mock_test = views.MockTestViewSet.as_view({'get': 'retrieve'})
+mock_test_viewset = views.MockTestViewSet.as_view({
+    'post': 'start'
+})
+
 free_mock_test = views.FreeMockTestViewSet.as_view({'get': 'retrieve',})
 
 
@@ -58,11 +62,19 @@ urlpatterns = [
 
     # mock test
     path('free-mock-test/summary/', views.MockTestHomeViewSet.as_view(), name='free-mock-test-summary'),
-    path('mock-tests/start/', views.MockTestViewSet.as_view({'post': 'start'})),
-    path('mock-tests/<int:pk>/', mock_test),
-    path('mock-tests/<int:pk>/answer/', views.MockTestViewSet.as_view({'post': 'answer'})),
-    path('mock-tests/<int:pk>/finish/', views.MockTestViewSet.as_view({'post': 'finish'})),
-    path('mock-tests/history/', views.MockTestViewSet.as_view({'get': 'history'})),
+    # path('mock-tests/start/', views.MockTestViewSet.as_view({'post': 'start'})),
+    # path('mock-tests/<int:pk>/', mock_test),
+    # path('mock-tests/<int:pk>/answer/', views.MockTestViewSet.as_view({'post': 'answer'})),
+    # path('mock-tests/<int:pk>/finish/', views.MockTestViewSet.as_view({'post': 'finish'})),
+    # path('mock-tests/history/', views.MockTestViewSet.as_view({'get': 'history'})),
+
+    path('mock-test/start/', views.MockTestViewSet.as_view({'post': 'start'}), name='mock-test-start'),
+    path('mock-test/<int:pk>/submit-all/', views.MockTestViewSet.as_view({'post': 'submit_all_answers'}), name='mock-test-submit-all'),
+    path('mock-test/<int:pk>/', views.MockTestViewSet.as_view({'get': 'retrieve'}), name='mock-test-detail'),
+    path('mock-test/<int:pk>/answer/', views.MockTestViewSet.as_view({'post': 'answer'}), name='mock-test-answer'),
+    path('mock-test/<int:pk>/finish/', views.MockTestViewSet.as_view({'post': 'finish'}), name='mock-test-finish'),
+    path('mock-test/history/', views.MockTestViewSet.as_view({'get': 'history'}), name='mock-test-history'),
+    
 
     # free mock test
     path('free-mock-tests/start/', views.FreeMockTestViewSet.as_view({'post': 'start'}), name='free-mock-start'),
