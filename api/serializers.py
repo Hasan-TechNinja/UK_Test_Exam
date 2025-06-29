@@ -89,10 +89,14 @@ class GuidesSupportModelSerializer(serializers.ModelSerializer):
 
 
 class GuideSupportContentModelSerializer(serializers.ModelSerializer):
+    glossary_list = serializers.SerializerMethodField()
+
     class Meta:
         model = GuideSupportContent
-        fields = ['id', 'image', 'description', 'video']
+        fields = ['id', 'image', 'description', 'video', 'created', 'glossary_list']
 
+    def get_glossary_list(self, obj):
+        return obj.get_glossary_string_list()
 
 
 
@@ -111,11 +115,15 @@ class HomePageModelSerializer(serializers.ModelSerializer):
 
 
 
-
 class LessonContentModelSerializer(serializers.ModelSerializer):
+    glossary_list = serializers.SerializerMethodField()
+
     class Meta:
         model = LessonContent
-        fields = "__all__"
+        fields = ['id', 'image', 'description', 'video', 'glossary_list']
+
+    def get_glossary_list(self, obj):
+        return obj.get_glossary_string_list()
 
 
 

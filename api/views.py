@@ -323,9 +323,53 @@ class ChapterLessonsView(APIView):
 
         return Response(data, status=status.HTTP_200_OK)
     
-
+'''
 class ChapterLessonDetailView(APIView):
     permission_classes = [IsAuthenticated]  # To ensure request.user is available
+
+    def get(self, request, chapter_id, lesson_id):
+        lesson = get_object_or_404(Lesson, id=lesson_id, chapter_id=chapter_id)
+
+        try:
+            step = int(request.query_params.get('step', 0))
+        except (TypeError, ValueError):
+            return Response({"detail": "Invalid step value"}, status=status.HTTP_400_BAD_REQUEST)
+
+        PAGE_SIZE = 10
+        start_index = step * PAGE_SIZE
+        end_index = start_index + PAGE_SIZE
+
+        lesson_qs = LessonContent.objects.filter(lesson=lesson).order_by('id')
+        glossary_list = lesson_qs.get_glossary_string_list()
+        total = lesson_qs.count()
+
+        if start_index >= total:
+            return Response({"detail": "No content available for this page."}, status=status.HTTP_404_NOT_FOUND)
+
+        current_page_items = lesson_qs[start_index:end_index]
+
+        user = request.user
+        progress_obj, _ = LessonProgress.objects.get_or_create(user=user, lesson=lesson)
+
+        for content in current_page_items:
+            if content not in progress_obj.completed_contents.all():
+                progress_obj.completed_contents.add(content)
+        progress_obj.update_completion()
+
+        serializer = LessonContentModelSerializer(current_page_items, many=True)
+
+        return Response({
+            "step": step,
+            "total_items": total,
+            # "completion_percentage": progress_obj.completion_percentage,
+            "content": serializer.data,
+            'glossary_list' : glossary_list
+
+        }, status=status.HTTP_200_OK)
+'''
+
+class ChapterLessonDetailView(APIView):
+    permission_classes = [IsAuthenticated]
 
     def get(self, request, chapter_id, lesson_id):
         lesson = get_object_or_404(Lesson, id=lesson_id, chapter_id=chapter_id)
@@ -360,7 +404,7 @@ class ChapterLessonDetailView(APIView):
         return Response({
             "step": step,
             "total_items": total,
-            # "completion_percentage": progress_obj.completion_percentage,
+            "completion_percentage": progress_obj.completion_percentage,
             "content": serializer.data
         }, status=status.HTTP_200_OK)
 
@@ -404,19 +448,30 @@ class GuideSupportContentView(APIView):
         start = step * self.PAGE_SIZE
         end = start + self.PAGE_SIZE
 
-        if start >= total:  
+        if start >= total:
             return Response({"detail": "No content available for this page."},
                             status=status.HTTP_404_NOT_FOUND)
 
         current_items = contents_qs[start:end]
-        serializer = GuideSupportContentModelSerializer(current_items, many=True)
+
+        # Serialize manually with glossary_list
+        content_data = []
+        for item in current_items:
+            content_data.append({
+                "id": item.id,
+                "image": request.build_absolute_uri(item.image.url) if item.image else None,
+                "description": item.description,
+                "video": item.video,
+                "created": item.created,
+                "glossary_list": item.get_glossary_string_list(),
+            })
 
         return Response({
             "title": title,
+            "step": step,
             "total_items": total,
-            "content": serializer.data,
+            "content": content_data,
         }, status=status.HTTP_200_OK)
-
 
 
 
