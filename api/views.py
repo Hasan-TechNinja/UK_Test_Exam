@@ -16,6 +16,7 @@ from rest_framework.authtoken.models import Token
 from rest_framework.permissions import IsAuthenticated, IsAdminUser, AllowAny
 from rest_framework.authentication import TokenAuthentication
 from rest_framework.decorators import api_view, authentication_classes, permission_classes, action
+from rest_framework_simplejwt.tokens import RefreshToken, TokenError
 import csv
 from io import TextIOWrapper
 
@@ -44,14 +45,29 @@ class LoginView(APIView):
             return Response({'token': token.key})
         return Response({'error': 'Invalid Credentials'}, status=status.HTTP_401_UNAUTHORIZED)
 
+# class LogoutView(APIView):
+#     authentication_classes = [TokenAuthentication]
+#     permission_classes = [IsAuthenticated]
+
+#     def post(self, request):
+#         request.user.auth_token.delete()
+#         return Response({'message': 'Logout successfully'}, status=status.HTTP_200_OK)
+
 class LogoutView(APIView):
-    authentication_classes = [TokenAuthentication]
-    permission_classes = [IsAuthenticated]
+    permission_classes = [permissions.IsAuthenticated]
 
     def post(self, request):
-        request.user.auth_token.delete()
-        return Response({'message': 'Logout successfully'}, status=status.HTTP_200_OK)
-    
+        refresh_token = request.data.get("refresh")
+        if refresh_token is None:
+            return Response({"detail": "Refresh token is required."}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            token = RefreshToken(refresh_token)
+            token.blacklist()
+            return Response({"detail": "Logout successful."}, status=status.HTTP_205_RESET_CONTENT)
+        except TokenError:
+            return Response({"detail": "Invalid or expired refresh token."}, status=status.HTTP_400_BAD_REQUEST)    
+
 
 class ProfileView(generics.RetrieveUpdateAPIView):
     permission_classes = [IsAuthenticated]
@@ -543,6 +559,7 @@ class PracticeChapterList(APIView):
                 completion_percentage = 0.0
 
             data.append({
+                'id': chapter.id,
                 'name': chapter.name,
                 'description': chapter.description,
                 'total_questions': total_questions,
@@ -553,7 +570,7 @@ class PracticeChapterList(APIView):
 
 
 
-
+'''
 PAGE_SIZE = 1
 
 class PracticeQuestionStepView(APIView):
@@ -583,8 +600,24 @@ class PracticeQuestionStepView(APIView):
             "has_next": step < total - 1,
             "question": data
         })
+'''
 
+class PracticeQuestionListView(APIView):
+    """
+    GET /practice/chapters/<chapter_id>/questions/
+    Returns all practice questions in a chapter with options
+    """
+    permission_classes = [IsAuthenticated]
 
+    def get(self, request, chapter_id):
+        questions = Question.objects.filter(type="practice", chapter_id=chapter_id).order_by("id")
+        serialized = QuestionSerializer(questions, many=True).data
+        return Response({
+            "total": questions.count(),
+            "questions": serialized
+        }, status=status.HTTP_200_OK)
+
+'''
 class SubmitAnswerView(APIView):
     """
     POST /practice/answer/
@@ -658,6 +691,72 @@ class SubmitAnswerView(APIView):
                 "has_next": next_step < total - 1,
                 "has_prev": True
             }
+        }, status=status.HTTP_200_OK)
+'''
+
+class SubmitAnswersView(APIView):
+    """
+    POST /practice/submit-answers/
+    {
+        "chapter_id": 1,
+        "answers": [
+            {
+                "question_id": 15,
+                "selected_options": [42, 43]
+            },
+            ...
+        ]
+    }
+    """
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        user = request.user
+        chapter_id = request.data.get("chapter_id")
+        answers = request.data.get("answers", [])
+
+        if not answers:
+            return Response({"detail": "Answers list is required."}, status=status.HTTP_400_BAD_REQUEST)
+
+        progress_obj, _ = ChapterProgress.objects.get_or_create(user=user, chapter_id=chapter_id)
+
+        results = []
+        correct_count = 0
+
+        for ans in answers:
+            question_id = ans.get("question_id")
+            selected = set(ans.get("selected_options", []))
+
+            try:
+                question = Question.objects.get(id=question_id, type="practice", chapter_id=chapter_id)
+            except Question.DoesNotExist:
+                continue  # skip invalid question
+
+            correct_set = set(question.options.filter(is_correct=True).values_list('id', flat=True))
+            is_correct = selected == correct_set
+
+            if question not in progress_obj.completed_questions.all():
+                progress_obj.completed_questions.add(question)
+
+            results.append({
+                "question_id": question_id,
+                "is_correct": is_correct,
+                "correct_options": list(correct_set),
+                "selected_options": list(selected),
+                "explanation": question.explanation,
+            })
+
+            if is_correct:
+                correct_count += 1
+
+        progress_obj.update_completion()
+
+        return Response({
+            "completed": True,
+            "total_questions": len(answers),
+            "correct_answers": correct_count,
+            "completion_percentage": progress_obj.completion_percentage,
+            "results": results
         }, status=status.HTTP_200_OK)
 
 

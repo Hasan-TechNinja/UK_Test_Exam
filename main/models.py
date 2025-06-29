@@ -69,15 +69,56 @@ class Lesson(models.Model):
         ordering = ['-created']
 
 
+# class LessonContent(models.Model):
+#     def set_glossary_string_list(self, data_list, delimiter=','):
+#         self.glossary = delimiter.join(data_list)
+
+#     def get_glossary_string_list(self, delimiter=','):
+#         if self.glossary:
+#             return [item.strip() for item in self.glossary.split(delimiter) if item.strip()]
+#         return []
+
+#     lesson = models.ForeignKey(Lesson, on_delete=models.CASCADE)
+#     image = models.ImageField(upload_to="lesson")
+#     description = models.TextField()
+#     glossary = set_glossary_string_list(models.TextField(max_length=200, default=""))
+#     # glossary = models.TextField(max_length=200, default="")
+#     video = models.URLField(blank=True, null=True)
+
+#     def __str__(self):
+#         return self.lesson.name
+    
+    
 class LessonContent(models.Model):
     lesson = models.ForeignKey(Lesson, on_delete=models.CASCADE)
     image = models.ImageField(upload_to="lesson")
     description = models.TextField()
+
+    # Define glossary as a standard TextField
     glossary = models.TextField(max_length=200, default="")
+
     video = models.URLField(blank=True, null=True)
 
+    def set_glossary_string_list(self, data_list, delimiter=','):
+        """
+        Converts a list of strings into a single delimited string
+        and assigns it to the 'glossary' field.
+        """
+        self.glossary = delimiter.join(data_list)
+
+    def get_glossary_string_list(self, delimiter=','):
+        """
+        Converts the delimited string in the 'glossary' field back into a list of strings.
+        """
+        if self.glossary:
+            return [item.strip() for item in self.glossary.split(delimiter) if item.strip()]
+        return []
+
     def __str__(self):
-        return self.lesson.name
+        # Ensure self.lesson exists before accessing its name
+        return self.lesson.name if self.lesson else f"Lesson Content (ID: {self.pk})"
+
+
 
 class LessonProgress(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='lesson_progress')

@@ -53,8 +53,8 @@ urlpatterns = [
 
     # practice question answer
     path('practice/chapters/', views.PracticeChapterList.as_view(), name='practice'),
-    path('practice/chapters/<int:chapter_id>/question/', views.PracticeQuestionStepView.as_view()),
-    path('practice/answer/', views.SubmitAnswerView.as_view()),
+    path('practice/chapters/<int:chapter_id>/question/', views.PracticeQuestionListView.as_view()),
+    path('practice/answer/', views.SubmitAnswersView.as_view()),
 
     # mock test
     path('free-mock-test/summary/', views.MockTestHomeViewSet.as_view(), name='free-mock-test-summary'),

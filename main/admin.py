@@ -1,5 +1,5 @@
 from django.contrib import admin
-from . models import Chapter, Lesson, Profile, GuidesSupport, GuideSupportContent, LessonContent, HomePage, QuestionOption, Question, UserEvaluation, MockTestAnswer, MockTestSession, FreeMockTestSession, FreeMockTestAnswer, ChapterProgress
+from . models import Chapter, Lesson, Profile, GuidesSupport, GuideSupportContent, LessonContent, HomePage, QuestionOption, Question, UserEvaluation, MockTestAnswer, MockTestSession, FreeMockTestSession, FreeMockTestAnswer, ChapterProgress, LessonProgress
 from rest_framework.authtoken.models import Token
 
 # Register your models here.
@@ -25,6 +25,13 @@ class LessonModelAdmin(admin.ModelAdmin):
     )
 admin.site.register(Lesson, LessonModelAdmin)
 
+
+
+class LessonProgressAdmin(admin.ModelAdmin):
+    list_display = (
+        'id', 'user', 'lesson', 'completion_percentage'
+    )
+admin.site.register(LessonProgress, LessonProgressAdmin)
 
 
 class LessonContentModelAdmin(admin.ModelAdmin):
