@@ -13,10 +13,10 @@ class ChapterModelSerializer(serializers.ModelSerializer):
     class Meta:
         model = Chapter
         # fields = "__all__"
-        # exclude = ['created']
-        fields = ['id', 'name', 'description', 'created']
+        exclude = ['created']
+        # fields = ['id', 'name', 'description', 'created']
 
-    user = serializers.HiddenField(default=serializers.CurrentUserDefault())
+    # user = serializers.HiddenField(default=serializers.CurrentUserDefault())
 
     def get_title(self, obj):
         return f"Chapter {obj.id}"
@@ -30,7 +30,7 @@ class ChapterModelSerializer(serializers.ModelSerializer):
     
 
 class LessonModelSerializers(serializers.ModelSerializer):
-    user = serializers.HiddenField(default=serializers.CurrentUserDefault())
+    # user = serializers.HiddenField(default=serializers.CurrentUserDefault())
     class Meta:
         model = Lesson
         exclude = ['created']

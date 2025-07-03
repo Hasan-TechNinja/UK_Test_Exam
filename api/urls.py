@@ -7,11 +7,7 @@ router = DefaultRouter()
 router.register(r'subscription-plans', views.SubscriptionPlanViewSet)
 router.register(r'user-subscriptions', views.UserSubscriptionViewSet, basename='user-subscription')
 
-# mock_test = views.MockTestViewSet.as_view({'get': 'retrieve'})
-mock_test_viewset = views.MockTestViewSet.as_view({
-    'post': 'start'
-})
-
+mock_test_viewset = views.MockTestViewSet.as_view({'post': 'start'})
 free_mock_test = views.FreeMockTestViewSet.as_view({'get': 'retrieve',})
 
 
@@ -22,6 +18,7 @@ urlpatterns = [
     path('homeAdmin/', views.HomePageAdminView.as_view(), name='homeAdmin'),
     path('chapterAdmin/', views.ChapterAdminView.as_view(), name='chapterAdmin'),
     path('lessonAdmin/', views.LessonAdminView.as_view(), name='lessonAdmin'),
+    path('lessonContentAdmin/', views.LessonContentAdminView.as_view(), name='lessonContents'),
     path('questionAdmin/', views.QuestionAdminView.as_view(), name='questionAdmin'),
     path('questionOptionsAdmin/', views.QuestionOptionAdminView.as_view(), name='questionOptionsAdmin'),
     path('guideAdmin/', views.GuideSupportAdminView.as_view(), name='guideAdmin'),
@@ -32,6 +29,7 @@ urlpatterns = [
     path('homeAdmin/<int:pk>', views.HomePageDetailsAdminView.as_view(), name='homeAdmin'),
     path('chapterAdmin/<int:pk>', views.ChapterDetailsAdminView.as_view(), name='chapterAdmin'),
     path('lessonAdmin/<int:pk>', views.LessonContentDetailsAdminView.as_view(), name='lessonAdmin'),
+    path('lessonContentAdmin/<int:pk>', views.LessonContentDetailsAdminView.as_view(), name='lessonContents'),
     path('questionAdmin/<int:pk>', views.QuestionDetailsAdminView.as_view(), name='questionAdmin'),
     path('questionOptionsAdmin/<int:pk>', views.QuestionOptionDetailsAdminView.as_view(), name='questionOptionsAdmin'),
     path('guideAdmin/<int:pk>', views.GuideSupportDetailsAdminView.as_view(), name='guideAdmin'),
@@ -61,7 +59,7 @@ urlpatterns = [
     path('practice/answer/', views.SubmitAnswersView.as_view()),
 
     # mock test
-    path('free-mock-test/summary/', views.MockTestHomeViewSet.as_view(), name='free-mock-test-summary'),
+    path('mock-test/summary/', views.MockTestHomeViewSet.as_view(), name='free-mock-test-summary'),
     # path('mock-tests/start/', views.MockTestViewSet.as_view({'post': 'start'})),
     # path('mock-tests/<int:pk>/', mock_test),
     # path('mock-tests/<int:pk>/answer/', views.MockTestViewSet.as_view({'post': 'answer'})),
@@ -82,6 +80,7 @@ urlpatterns = [
     path('free-mock-tests/<int:pk>/answer/', views.FreeMockTestViewSet.as_view({'post': 'answer'}), name='free-mock-answer'),
     path('free-mock-tests/<int:pk>/finish/', views.FreeMockTestViewSet.as_view({'post': 'finish'}), name='free-mock-finish'),
     path('free-mock-tests/history/', views.FreeMockTestViewSet.as_view({'get': 'history'}), name='free-mock-history'),
+    path('free-mock-tests/<int:pk>/submit-all-answers/',views.FreeMockTestViewSet.as_view({'post': 'submit_all_answers'}),name='free-mock-submit-all-answers'),
 
     # question upload
     path("upload-questions/", views.UploadCSVAPIView.as_view(), name="upload-questions"),

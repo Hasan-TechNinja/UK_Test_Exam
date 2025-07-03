@@ -201,19 +201,13 @@ class HomePageDetailsAdminView(generics.RetrieveUpdateDestroyAPIView):
     permission_classes = [IsAdminUser]
     lookup_field = "pk"
 
-class QuestionDetailsAdminView(generics.RetrieveUpdateDestroyAPIView):
-    queryset = Question.objects.all()
-    serializer_class = QuestionSerializer
+class ChapterDetailsAdminView(generics.RetrieveUpdateDestroyAPIView):
+    queryset = Chapter.objects.all()
+    serializer_class = ChapterModelSerializer
     # authentication_classes = [TokenAuthentication]
     permission_classes = [IsAdminUser]
     lookup_field = "pk"
 
-class QuestionOptionDetailsAdminView(generics.RetrieveUpdateDestroyAPIView):
-    queryset = QuestionOption.objects.all()
-    serializer_class = QuestionOptionSerializer
-    # authentication_classes = [TokenAuthentication]
-    permission_classes = [IsAdminUser]
-    lookup_field = "pk"
 
 class LessonDetailsAdminView(generics.RetrieveUpdateDestroyAPIView):
     queryset = Lesson.objects.all()
@@ -230,12 +224,20 @@ class LessonContentDetailsAdminView(generics.RetrieveUpdateDestroyAPIView):
     lookup_field = "pk"
 
 
-class ChapterDetailsAdminView(generics.RetrieveUpdateDestroyAPIView):
-    queryset = Chapter.objects.all()
-    serializer_class = ChapterModelSerializer
+class QuestionDetailsAdminView(generics.RetrieveUpdateDestroyAPIView):
+    queryset = Question.objects.all()
+    serializer_class = QuestionSerializer
     # authentication_classes = [TokenAuthentication]
     permission_classes = [IsAdminUser]
     lookup_field = "pk"
+
+class QuestionOptionDetailsAdminView(generics.RetrieveUpdateDestroyAPIView):
+    queryset = QuestionOption.objects.all()
+    serializer_class = QuestionOptionSerializer
+    # authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAdminUser]
+    lookup_field = "pk"
+
 
 class GuideSupportDetailsAdminView(generics.RetrieveUpdateDestroyAPIView):
     queryset = GuidesSupport.objects.all()
@@ -344,7 +346,7 @@ class ChapterLessonsView(APIView):
 
 
 class ChapterLessonDetailView(APIView):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [AllowAny]
 
     def get(self, request, chapter_id, lesson_id):
         lesson = get_object_or_404(Lesson, id=lesson_id, chapter_id=chapter_id)
@@ -366,23 +368,28 @@ class ChapterLessonDetailView(APIView):
 
         current_page_items = lesson_qs[start_index:end_index]
 
-        user = request.user
-        progress_obj, _ = LessonProgress.objects.get_or_create(user=user, lesson=lesson)
+        completion_percentage = None  # Default for anonymous users
 
-        for content in current_page_items:
-            if content not in progress_obj.completed_contents.all():
-                progress_obj.completed_contents.add(content)
-        progress_obj.update_completion()
+        # Update progress only if user is authenticated
+        if request.user.is_authenticated:
+            user = request.user
+            progress_obj, _ = LessonProgress.objects.get_or_create(user=user, lesson=lesson)
+
+            for content in current_page_items:
+                if content not in progress_obj.completed_contents.all():
+                    progress_obj.completed_contents.add(content)
+
+            progress_obj.update_completion()
+            completion_percentage = progress_obj.completion_percentage
 
         serializer = LessonContentModelSerializer(current_page_items, many=True)
 
         return Response({
             "step": step,
             "total_items": total,
-            "completion_percentage": progress_obj.completion_percentage,
+            "completion_percentage": completion_percentage,
             "content": serializer.data
         }, status=status.HTTP_200_OK)
-
 
 
     
@@ -794,7 +801,7 @@ class SubmitAnswersView(APIView):
         }, status=status.HTTP_200_OK)
 
 
-# ______________-----------------------Mock Test-----------------______________
+# ______________-----------------------------------Mock Test--------------------------------______________
 
 
 class MockTestHomeViewSet(APIView):
@@ -1104,16 +1111,28 @@ class FreeMockTestViewSet(viewsets.ViewSet):
 
     def retrieve(self, request, pk=None):
         session = get_object_or_404(FreeMockTestSession, pk=pk, user=request.user)
-        answers = session.answers.select_related('question').prefetch_related('selected_choices', 'question__options')
+        answers = session.answers.select_related('question').prefetch_related('question__options')
 
-        data = []
+        questions_data = []
         for answer in answers:
-            data.append({
-                'question': QuestionSerializer(answer.question).data,
-                'selected_choices': list(answer.selected_choices.values_list('id', flat=True)),
-                'is_correct': answer.is_correct
+            question = answer.question
+            options = question.options.all()
+            questions_data.append({
+                'question_id': question.id,
+                'question_text': question.question_text,
+                'image': question.image.url if question.image else None,
+                'multiple_answers': question.multiple_answers,
+                'options': [
+                    {'id': opt.id, 'text': opt.text}
+                    for opt in options
+                ]
             })
-        return Response({'session_id': session.id, 'answers': data})
+
+        return Response({
+            'session_id': session.id,
+            'questions': questions_data
+        })
+
 
     @action(detail=True, methods=['post'])
     def answer(self, request, pk=None):
@@ -1162,8 +1181,72 @@ class FreeMockTestViewSet(viewsets.ViewSet):
         return Response(FreeMockTestResultSerializer(sessions, many=True).data)
     
 
+    @action(detail=True, methods=['post'])
+    def submit_all_answers(self, request, pk=None):
+        session = get_object_or_404(FreeMockTestSession, pk=pk, user=request.user)
 
-    # -----------------------Question upload-------------------------------
+        answers_data = request.data.get('answers', [])
+        if not isinstance(answers_data, list):
+            return Response({'error': '"answers" must be a list.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        total = 0
+        correct = 0
+        detailed_results = []
+
+        for item in answers_data:
+            question_id = item.get('question')
+            selected_ids = item.get('selected_choice_ids', [])
+
+            if question_id is None or not isinstance(selected_ids, list):
+                continue  # Skip invalid entries
+
+            try:
+                answer = FreeMockTestAnswer.objects.get(session=session, question_id=question_id)
+            except FreeMockTestAnswer.DoesNotExist:
+                continue
+
+            valid_choice_ids = set(answer.question.options.values_list('id', flat=True))
+            if not set(selected_ids).issubset(valid_choice_ids):
+                continue
+
+            answer.selected_choices.set(selected_ids)
+
+            correct_ids = set(answer.question.options.filter(is_correct=True).values_list('id', flat=True))
+            is_correct = set(selected_ids) == correct_ids
+            answer.is_correct = is_correct
+            answer.save()
+
+            correct_choice_ids = list(answer.question.options.filter(is_correct=True).values_list('id', flat=True))
+
+            total += 1
+            if is_correct:
+                correct += 1
+
+            detailed_results.append({
+                'question_id': answer.question.id,
+                'question': answer.question.question_text,
+                'selected_choices': selected_ids,
+                'correct_choices': correct_choice_ids,
+                'is_correct': is_correct
+            })
+
+        # Finalize session
+        session.score = round((correct / total) * 100) if total else 0
+        session.finished_at = timezone.now()
+        session.save()
+
+        return Response({
+            'session_id': session.id,
+            'score': session.score,
+            'total_questions': total,
+            'correct_answers': correct,
+            'wrong_answers': total - correct,
+            'results': detailed_results
+        }, status=status.HTTP_200_OK)
+
+
+
+# -----------------------Question upload-------------------------------
 
 class UploadCSVAPIView(APIView):
     permission_classes = [permissions.IsAdminUser, ]
