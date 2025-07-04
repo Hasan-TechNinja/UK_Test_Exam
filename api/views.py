@@ -5,6 +5,7 @@ from django.contrib.auth import authenticate
 from datetime import timedelta
 import random
 from django.db.models import Max
+from django.contrib.auth.models import AnonymousUser
 
 from main.models import Lesson, Chapter, Profile, GuidesSupport, HomePage, GuideSupportContent, LessonContent, UserEvaluation, Question, QuestionOption, MockTestSession, MockTestAnswer, FreeMockTestSession, FreeMockTestAnswer, ChapterProgress, LessonProgress
 from subscriptions.models import SubscriptionPlan, UserSubscription
@@ -264,14 +265,13 @@ class SubscriptionPlanDetailsAdminView(generics.RetrieveUpdateDestroyAPIView):
 
 class HomePageView(APIView):
     def get(self, request):
-        home = HomePage.objects.all()
-        serializer = HomePageModelSerializer(home, many = True)
-        return Response(serializer.data, status=status.HTTP_200_OK)
+        home = HomePage.objects.last()
+        if home:
+            serializer = HomePageModelSerializer(home)
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        return Response({'detail': 'No content found.'}, status=status.HTTP_404_NOT_FOUND)
 
 
-
-
-from django.contrib.auth.models import AnonymousUser
 
 class ChapterListView(APIView):
     permission_classes = [AllowAny]  # Allow both authenticated and unauthenticated users
