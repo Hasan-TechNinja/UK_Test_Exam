@@ -6,6 +6,10 @@ from django.contrib.auth import get_user_model
 from django.contrib.auth.password_validation import validate_password
 from rest_framework.validators import UniqueValidator
 
+from main.models import EmailVerification
+from django.core.mail import send_mail
+import random
+
 
 
 class ChapterModelSerializer(serializers.ModelSerializer):
@@ -40,19 +44,8 @@ class LessonModelSerializers(serializers.ModelSerializer):
         return super().create(validated_data)
 
     
-
 '''
-class RegisterSerializer(serializers.ModelSerializer):
-    password = serializers.CharField(write_only=True)
-
-    class Meta:
-        model = User
-        fields = ['username', 'email', 'password']
-
-    def create(self, validated_data):
-        user = User.objects.create_user(**validated_data)
-        return user
-'''
+# Registration serializer without email verification------------------>
 
 User = get_user_model()
 
@@ -73,8 +66,41 @@ class RegisterSerializer(serializers.ModelSerializer):
             email=validated_data['email'],
             password=validated_data['password']
         )
-        return user
+        return user'''
     
+User = get_user_model()
+class RegisterSerializer(serializers.ModelSerializer):
+    email = serializers.EmailField(
+        required=True,
+        validators=[UniqueValidator(queryset=User.objects.all(), message="This email is already in use.")]
+    )
+    password = serializers.CharField(write_only=True, validators=[validate_password])
+
+    class Meta:
+        model = User
+        fields = ['username', 'email', 'password']
+
+    def create(self, validated_data):
+        user = User.objects.create_user(
+            username=validated_data['username'],
+            email=validated_data['email'],
+            password=validated_data['password'],
+            is_active=False  # User is inactive until email is verified
+        )
+
+        code = str(random.randint(100000, 999999))
+        EmailVerification.objects.create(user=user, code=code)
+
+        send_mail(
+            'Your Verification Code',
+            f'Your verification code is {code}',
+            'noreply@example.com',
+            [user.email],
+            fail_silently=False
+        )
+
+        return user
+
 
 class ProfileModelSerializer(serializers.ModelSerializer):
     class Meta:

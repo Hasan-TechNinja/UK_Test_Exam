@@ -21,6 +21,10 @@ from rest_framework.decorators import api_view, authentication_classes, permissi
 from rest_framework_simplejwt.tokens import RefreshToken, TokenError
 import csv
 from io import TextIOWrapper
+from django.contrib.auth import get_user_model
+from main.models import EmailVerification, PasswordResetCode
+from django.core.mail import send_mail
+from django.contrib.auth.password_validation import validate_password
 
 #  Create your views here.
 
@@ -34,6 +38,105 @@ class RegisterView(APIView):
             token, _ = Token.objects.get_or_create(user=user)
             return Response({'token': token.key}, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+
+User = get_user_model()
+class VerifyEmailView(APIView):
+    def post(self, request):
+        email = request.data.get("email")
+        code = request.data.get("code")
+
+        try:
+            user = User.objects.get(email=email)
+            verification = EmailVerification.objects.get(user=user)
+
+            if verification.code != code:
+                return Response({"error": "Invalid code"}, status=status.HTTP_400_BAD_REQUEST)
+
+            if verification.is_expired():
+                user.delete()
+                return Response({"error": "Verification code expired. User removed."}, status=status.HTTP_400_BAD_REQUEST)
+
+            user.is_active = True
+            user.save()
+            verification.delete()  # Optional cleanup
+
+            return Response({"message": "Email verified successfully. User is now active."}, status=status.HTTP_200_OK)
+
+        except User.DoesNotExist:
+            return Response({"error": "User not found."}, status=status.HTTP_404_NOT_FOUND)
+        except EmailVerification.DoesNotExist:
+            return Response({"error": "Verification record not found."}, status=status.HTTP_404_NOT_FOUND)
+
+
+class ForgotPasswordView(APIView):
+    def post(self, request):
+        email = request.data.get("email")
+        if not email:
+            return Response({"error": "Email is required."}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            user = User.objects.get(email=email)
+        except User.DoesNotExist:
+            return Response({"error": "User with this email does not exist."}, status=status.HTTP_404_NOT_FOUND)
+
+        # Generate and store code
+        code = str(random.randint(100000, 999999))
+        PasswordResetCode.objects.update_or_create(user=user, defaults={"code": code})
+
+        # Send the code via email
+        send_mail(
+            'Your Password Reset Code',
+            f'Your password reset code is: {code}',
+            'noreply@example.com',
+            [email],
+            fail_silently=False
+        )
+
+        return Response({"message": "Password reset code sent to email."}, status=status.HTTP_200_OK)
+
+
+
+class ResetPasswordView(APIView):
+    def post(self, request):
+        email = request.data.get("email")
+        code = request.data.get("code")
+        new_password = request.data.get("new_password")
+
+        if not email or not code or not new_password:
+            return Response(
+                {"error": "Email, code, and new password are required."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        try:
+            user = User.objects.get(email=email)
+            reset = PasswordResetCode.objects.get(user=user)
+
+            if reset.code != code:
+                return Response({"error": "Invalid reset code."}, status=status.HTTP_400_BAD_REQUEST)
+
+            if reset.is_expired():
+                reset.delete()
+                return Response({"error": "Reset code expired."}, status=status.HTTP_400_BAD_REQUEST)
+
+            # Validate password
+            validate_password(new_password, user=user)
+
+            user.set_password(new_password)
+            user.save()
+
+            reset.delete()
+
+            return Response({"message": "Password reset successful."}, status=status.HTTP_200_OK)
+
+        except User.DoesNotExist:
+            return Response({"error": "User not found."}, status=status.HTTP_404_NOT_FOUND)
+        except PasswordResetCode.DoesNotExist:
+            return Response({"error": "Reset code not found."}, status=status.HTTP_404_NOT_FOUND)
+
+
 
 
 class LoginView(APIView):
