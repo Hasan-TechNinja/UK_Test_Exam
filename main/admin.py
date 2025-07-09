@@ -95,6 +95,7 @@ class QuestionAdmin(admin.ModelAdmin):
     list_display = (
         'id', 'chapter', 'type', 'question_text', 'explanation', 'image', 'multiple_answers'
     )
+    list_filter = ['type']
 admin.site.register(Question, QuestionAdmin)
 
 
