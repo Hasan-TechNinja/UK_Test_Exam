@@ -313,6 +313,12 @@ class ChapterDetailsAdminView(generics.RetrieveUpdateDestroyAPIView):
     lookup_field = "pk"
 
 
+class LessonAdminDetailsView(generics.RetrieveUpdateDestroyAPIView):
+    queryset = Lesson.objects.all()
+    serializer_class = LessonModelSerializers
+    permission_classes = [IsAdminUser]
+    lookup_field = "pk"
+
 class LessonDetailsAdminView(generics.RetrieveUpdateDestroyAPIView):
     queryset = Lesson.objects.all()
     serializer_class = LessonModelSerializers
@@ -388,7 +394,9 @@ class ChapterListView(APIView):
             total_lessons = lessons.count()
 
             completed_lessons = 0
-            lesson_ids = [str(lesson.id) for lesson in lessons]
+            # lesson_ids = [str(lesson.id) for lesson in lessons]
+            
+            lesson_ids = [str(lesson.name) for lesson in lessons]
 
             # Only calculate progress if the user is authenticated
             show_progress = request.user and not isinstance(request.user, AnonymousUser)

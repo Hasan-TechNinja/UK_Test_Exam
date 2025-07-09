@@ -28,7 +28,7 @@ urlpatterns = [
     #admin details view
     path('homeAdmin/<int:pk>', views.HomePageDetailsAdminView.as_view(), name='homeAdmin'),
     path('chapterAdmin/<int:pk>', views.ChapterDetailsAdminView.as_view(), name='chapterAdmin'),
-    path('lessonAdmin/<int:pk>', views.LessonContentDetailsAdminView.as_view(), name='lessonAdmin'),
+    path('lessonAdmin/<int:pk>', views.LessonAdminDetailsView.as_view(), name='lessonAdmin'),
     path('lessonContentAdmin/<int:pk>', views.LessonContentDetailsAdminView.as_view(), name='lessonContents'),
     path('questionAdmin/<int:pk>', views.QuestionDetailsAdminView.as_view(), name='questionAdmin'),
     path('questionOptionsAdmin/<int:pk>', views.QuestionOptionDetailsAdminView.as_view(), name='questionOptionsAdmin'),
