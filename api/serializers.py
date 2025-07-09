@@ -142,11 +142,12 @@ class HomePageModelSerializer(serializers.ModelSerializer):
 
 
 class LessonContentModelSerializer(serializers.ModelSerializer):
+    chapter_name = serializers.CharField(source='lesson.chapter.name', read_only=True)
     glossary_list = serializers.SerializerMethodField()
 
     class Meta:
         model = LessonContent
-        fields = ['id', 'image', 'description', 'video', 'glossary_list']
+        fields = ['id','chapter_name','lesson','image','description','video','glossary_list']
 
     def get_glossary_list(self, obj):
         return obj.get_glossary_string_list()
