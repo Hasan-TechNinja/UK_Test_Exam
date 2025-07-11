@@ -17,8 +17,8 @@ class ChapterModelSerializer(serializers.ModelSerializer):
     class Meta:
         model = Chapter
         # fields = "__all__"
-        exclude = ['created']
-        # fields = ['id', 'name', 'description', 'created']
+        # exclude = ['created']
+        fields = ['id', 'name', 'description', 'lessons']
 
     # user = serializers.HiddenField(default=serializers.CurrentUserDefault())
 

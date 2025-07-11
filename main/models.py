@@ -1,7 +1,7 @@
 from django.db import models
-from ckeditor.fields import RichTextField
+# from ckeditor.fields import RichTextField
 from django.contrib.auth.models import User
-from django.core.validators import MaxValueValidator, MinValueValidator
+# from django.core.validators import MaxValueValidator, MinValueValidator
 import uuid
 from django.contrib.auth import get_user_model
 from django.utils import timezone
