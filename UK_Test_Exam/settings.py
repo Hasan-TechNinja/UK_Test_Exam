@@ -29,7 +29,7 @@ SECRET_KEY = 'django-insecure-j_-$b4ag)nr&-c25t1%qf#g$famv+6d_8inn8ap_367=5cul-(
 DEBUG = True
 
 ALLOWED_HOSTS = ['*']
-
+CSRF_TRUSTED_ORIGINS = ['https://uk-test-exam.onrender.com']
 
 # Application definition
 
