@@ -138,37 +138,48 @@ class ResetPasswordView(APIView):
 
 
 
+User = get_user_model()
 
 class LoginView(APIView):
     def post(self, request):
-        username = request.data.get("username")
+        email = request.data.get("email")
         password = request.data.get("password")
-        user = authenticate(username=username, password=password)
 
-        if user:
-            token, _ = Token.objects.get_or_create(user=user)
+        try:
+            user = User.objects.get(email=email)
+        except User.DoesNotExist:
             return Response({
-                "success": True,
-                "message": "Login successful",
-                "data": {
-                    "token": token.key
-                }
-            }, status=status.HTTP_200_OK)
+                "success": False,
+                "message": "Invalid email or password",
+                "data": None
+            }, status=status.HTTP_401_UNAUTHORIZED)
+
+        if not user.check_password(password):
+            return Response({
+                "success": False,
+                "message": "Invalid email or password",
+                "data": None
+            }, status=status.HTTP_401_UNAUTHORIZED)
+
+        if not user.is_active:
+            return Response({
+                "success": False,
+                "message": "User account is inactive",
+                "data": None
+            }, status=status.HTTP_403_FORBIDDEN)
+
+        refresh = RefreshToken.for_user(user)
 
         return Response({
-            "success": False,
-            "message": "Invalid credentials",
-            "data": None
-        }, status=status.HTTP_401_UNAUTHORIZED)
+            "success": True,
+            "message": "Login successful",
+            "data": {
+                "refresh": str(refresh),
+                "access": str(refresh.access_token)
+            }
+        }, status=status.HTTP_200_OK)
+
     
-
-# class LogoutView(APIView):
-#     authentication_classes = [TokenAuthentication]
-#     permission_classes = [IsAuthenticated]
-
-#     def post(self, request):
-#         request.user.auth_token.delete()
-#         return Response({'message': 'Logout successfully'}, status=status.HTTP_200_OK)
 
 class LogoutView(APIView):
     permission_classes = [permissions.IsAuthenticated]

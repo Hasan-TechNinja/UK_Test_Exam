@@ -43,11 +43,9 @@ class LessonModelSerializers(serializers.ModelSerializer):
     
         return super().create(validated_data)
 
-    
-'''
-# Registration serializer without email verification------------------>
 
-User = get_user_model()
+
+from django.utils.text import slugify
 
 class RegisterSerializer(serializers.ModelSerializer):
     email = serializers.EmailField(
@@ -58,34 +56,24 @@ class RegisterSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        fields = ['username', 'email', 'password']
+        fields = ['email', 'password']  # Removed username input
 
     def create(self, validated_data):
-        user = User.objects.create_user(
-            username=validated_data['username'],
-            email=validated_data['email'],
-            password=validated_data['password']
-        )
-        return user'''
-    
-User = get_user_model()
-class RegisterSerializer(serializers.ModelSerializer):
-    email = serializers.EmailField(
-        required=True,
-        validators=[UniqueValidator(queryset=User.objects.all(), message="This email is already in use.")]
-    )
-    password = serializers.CharField(write_only=True, validators=[validate_password])
+        email = validated_data['email']
+        username_base = slugify(email.split('@')[0])
+        username = username_base
 
-    class Meta:
-        model = User
-        fields = ['username', 'email', 'password']
+        # Ensure uniqueness
+        counter = 1
+        while User.objects.filter(username=username).exists():
+            username = f"{username_base}{counter}"
+            counter += 1
 
-    def create(self, validated_data):
         user = User.objects.create_user(
-            username=validated_data['username'],
-            email=validated_data['email'],
+            username=username,
+            email=email,
             password=validated_data['password'],
-            is_active=False  # User is inactive until email is verified
+            is_active=False
         )
 
         code = str(random.randint(100000, 999999))
@@ -95,7 +83,7 @@ class RegisterSerializer(serializers.ModelSerializer):
             'Your Verification Code',
             f'Your verification code is {code}',
             'noreply@example.com',
-            [user.email],
+            [email],
             fail_silently=False
         )
 
