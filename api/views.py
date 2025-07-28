@@ -147,8 +147,20 @@ class LoginView(APIView):
 
         if user:
             token, _ = Token.objects.get_or_create(user=user)
-            return Response({'token': token.key})
-        return Response({'error': 'Invalid Credentials'}, status=status.HTTP_401_UNAUTHORIZED)
+            return Response({
+                "success": True,
+                "message": "Login successful",
+                "data": {
+                    "token": token.key
+                }
+            }, status=status.HTTP_200_OK)
+
+        return Response({
+            "success": False,
+            "message": "Invalid credentials",
+            "data": None
+        }, status=status.HTTP_401_UNAUTHORIZED)
+    
 
 # class LogoutView(APIView):
 #     authentication_classes = [TokenAuthentication]
@@ -163,15 +175,28 @@ class LogoutView(APIView):
 
     def post(self, request):
         refresh_token = request.data.get("refresh")
+
         if refresh_token is None:
-            return Response({"detail": "Refresh token is required."}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({
+                "success": False,
+                "message": "Refresh token is required.",
+                "data": None
+            }, status=status.HTTP_400_BAD_REQUEST)
 
         try:
             token = RefreshToken(refresh_token)
             token.blacklist()
-            return Response({"detail": "Logout successful."}, status=status.HTTP_205_RESET_CONTENT)
+            return Response({
+                "success": True,
+                "message": "Logout successful.",
+                "data": None
+            }, status=status.HTTP_205_RESET_CONTENT)
         except TokenError:
-            return Response({"detail": "Invalid or expired refresh token."}, status=status.HTTP_400_BAD_REQUEST)    
+            return Response({
+                "success": False,
+                "message": "Invalid or expired refresh token.",
+                "data": None
+            }, status=status.HTTP_400_BAD_REQUEST)
 
 
 class ProfileView(generics.RetrieveUpdateAPIView):
@@ -377,8 +402,17 @@ class HomePageView(APIView):
         home = HomePage.objects.last()
         if home:
             serializer = HomePageModelSerializer(home)
-            return Response(serializer.data, status=status.HTTP_200_OK)
-        return Response({'detail': 'No content found.'}, status=status.HTTP_404_NOT_FOUND)
+            return Response({
+                "success": True,
+                "message": "Home page content retrieved successfully.",
+                "data": serializer.data
+            }, status=status.HTTP_200_OK)
+
+        return Response({
+            "success": False,
+            "message": "No home page content found.",
+            "data": None
+        }, status=status.HTTP_404_NOT_FOUND)
 
 
 
