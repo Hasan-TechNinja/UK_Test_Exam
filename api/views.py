@@ -35,13 +35,27 @@ class RegisterView(APIView):
         serializer = RegisterSerializer(data=request.data)
         if serializer.is_valid():
             user = serializer.save()
-            token, _ = Token.objects.get_or_create(user=user)
-            return Response({'token': token.key}, status=status.HTTP_201_CREATED)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+            refresh = RefreshToken.for_user(user)
+            return Response({
+                "success": True,
+                "message": "User registered successfully. Please verify your email.",
+                "data": {
+                    "refresh": str(refresh),
+                    "access": str(refresh.access_token)
+                }
+            }, status=status.HTTP_201_CREATED)
+
+        return Response({
+            "success": False,
+            "message": "Registration failed.",
+            "data": serializer.errors
+        }, status=status.HTTP_400_BAD_REQUEST)
 
 
 
 User = get_user_model()
+
 class VerifyEmailView(APIView):
     def post(self, request):
         email = request.data.get("email")
@@ -52,22 +66,45 @@ class VerifyEmailView(APIView):
             verification = EmailVerification.objects.get(user=user)
 
             if verification.code != code:
-                return Response({"error": "Invalid code"}, status=status.HTTP_400_BAD_REQUEST)
+                return Response({
+                    "success": False,
+                    "message": "Invalid verification code.",
+                    "data": None
+                }, status=status.HTTP_400_BAD_REQUEST)
 
             if verification.is_expired():
                 user.delete()
-                return Response({"error": "Verification code expired. User removed."}, status=status.HTTP_400_BAD_REQUEST)
+                return Response({
+                    "success": False,
+                    "message": "Verification code expired. User has been deleted.",
+                    "data": None
+                }, status=status.HTTP_400_BAD_REQUEST)
 
             user.is_active = True
             user.save()
-            verification.delete()  # Optional cleanup
+            verification.delete()
 
-            return Response({"message": "Email verified successfully. User is now active."}, status=status.HTTP_200_OK)
+            return Response({
+                "success": True,
+                "message": "Email verified successfully. User is now active.",
+                "data": {
+                    "email": user.email
+                }
+            }, status=status.HTTP_200_OK)
 
         except User.DoesNotExist:
-            return Response({"error": "User not found."}, status=status.HTTP_404_NOT_FOUND)
+            return Response({
+                "success": False,
+                "message": "User not found.",
+                "data": None
+            }, status=status.HTTP_404_NOT_FOUND)
+
         except EmailVerification.DoesNotExist:
-            return Response({"error": "Verification record not found."}, status=status.HTTP_404_NOT_FOUND)
+            return Response({
+                "success": False,
+                "message": "Verification record not found.",
+                "data": None
+            }, status=status.HTTP_404_NOT_FOUND)
 
 
 class ForgotPasswordView(APIView):
