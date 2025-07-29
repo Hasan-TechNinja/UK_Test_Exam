@@ -111,12 +111,20 @@ class ForgotPasswordView(APIView):
     def post(self, request):
         email = request.data.get("email")
         if not email:
-            return Response({"error": "Email is required."}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({
+                "success": False,
+                "message": "Email is required.",
+                "data": None
+            }, status=status.HTTP_400_BAD_REQUEST)
 
         try:
             user = User.objects.get(email=email)
         except User.DoesNotExist:
-            return Response({"error": "User with this email does not exist."}, status=status.HTTP_404_NOT_FOUND)
+            return Response({
+                "success": False,
+                "message": "User with this email does not exist.",
+                "data": None
+            }, status=status.HTTP_404_NOT_FOUND)
 
         # Generate and store code
         code = str(random.randint(100000, 999999))
@@ -131,7 +139,11 @@ class ForgotPasswordView(APIView):
             fail_silently=False
         )
 
-        return Response({"message": "Password reset code sent to email."}, status=status.HTTP_200_OK)
+        return Response({
+            "success": True,
+            "message": "Password reset code sent to email.",
+            "data": None
+        }, status=status.HTTP_200_OK)
 
 
 
@@ -142,21 +154,30 @@ class ResetPasswordView(APIView):
         new_password = request.data.get("new_password")
 
         if not email or not code or not new_password:
-            return Response(
-                {"error": "Email, code, and new password are required."},
-                status=status.HTTP_400_BAD_REQUEST
-            )
+            return Response({
+                "success": False,
+                "message": "Email, code, and new password are required.",
+                "data": None
+            }, status=status.HTTP_400_BAD_REQUEST)
 
         try:
             user = User.objects.get(email=email)
             reset = PasswordResetCode.objects.get(user=user)
 
             if reset.code != code:
-                return Response({"error": "Invalid reset code."}, status=status.HTTP_400_BAD_REQUEST)
+                return Response({
+                    "success": False,
+                    "message": "Invalid reset code.",
+                    "data": None
+                }, status=status.HTTP_400_BAD_REQUEST)
 
             if reset.is_expired():
                 reset.delete()
-                return Response({"error": "Reset code expired."}, status=status.HTTP_400_BAD_REQUEST)
+                return Response({
+                    "success": False,
+                    "message": "Reset code expired.",
+                    "data": None
+                }, status=status.HTTP_400_BAD_REQUEST)
 
             # Validate password
             validate_password(new_password, user=user)
@@ -166,12 +187,24 @@ class ResetPasswordView(APIView):
 
             reset.delete()
 
-            return Response({"message": "Password reset successful."}, status=status.HTTP_200_OK)
+            return Response({
+                "success": True,
+                "message": "Password reset successful.",
+                "data": None
+            }, status=status.HTTP_200_OK)
 
         except User.DoesNotExist:
-            return Response({"error": "User not found."}, status=status.HTTP_404_NOT_FOUND)
+            return Response({
+                "success": False,
+                "message": "User not found.",
+                "data": None
+            }, status=status.HTTP_404_NOT_FOUND)
         except PasswordResetCode.DoesNotExist:
-            return Response({"error": "Reset code not found."}, status=status.HTTP_404_NOT_FOUND)
+            return Response({
+                "success": False,
+                "message": "Reset code not found.",
+                "data": None
+            }, status=status.HTTP_404_NOT_FOUND)
 
 
 
@@ -254,6 +287,44 @@ class ProfileView(generics.RetrieveUpdateAPIView):
     def get_object(self):
         return self.request.user.profile
 
+    def get(self, request, *args, **kwargs):
+        try:
+            profile = self.get_object()
+            serializer = self.get_serializer(profile)
+            return Response({
+                "success": True,
+                "message": "Profile retrieved successfully.",
+                "data": serializer.data
+            }, status=status.HTTP_200_OK)
+        except Exception as e:
+            return Response({
+                "success": False,
+                "message": str(e),
+                "data": None
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+    def put(self, request, *args, **kwargs):
+        try:
+            profile = self.get_object()
+            serializer = self.get_serializer(profile, data=request.data, partial=True)
+            if serializer.is_valid():
+                serializer.save()
+                return Response({
+                    "success": True,
+                    "message": "Profile updated successfully.",
+                    "data": serializer.data
+                }, status=status.HTTP_200_OK)
+            return Response({
+                "success": False,
+                "message": "Invalid data provided.",
+                "data": serializer.errors
+            }, status=status.HTTP_400_BAD_REQUEST)
+        except Exception as e:
+            return Response({
+                "success": False,
+                "message": str(e),
+                "data": None
+            }, status=status.HTTP_400_BAD_REQUEST)
 
 class UserEvaluationView(APIView):
     permission_classes = [IsAuthenticated]
@@ -262,7 +333,11 @@ class UserEvaluationView(APIView):
         try:
             evaluation = UserEvaluation.objects.get(user=request.user.profile)
         except UserEvaluation.DoesNotExist:
-            return Response({'error': 'Evaluation not found.'}, status=status.HTTP_404_NOT_FOUND)
+            return Response({
+                "success": False,
+                "message": "Evaluation not found.",
+                "data": None
+            }, status=status.HTTP_404_NOT_FOUND)
 
         try:
             total = int(evaluation.QuestionAnswered or 0)
@@ -300,7 +375,11 @@ class UserEvaluationView(APIView):
             "WrongAnsweredPercentage": wrong_percentage,
         }
 
-        return Response(response_data, status=status.HTTP_200_OK)
+        return Response({
+            "success": True,
+            "message": "User evaluation data retrieved successfully.",
+            "data": response_data
+        }, status=status.HTTP_200_OK)
 
 
         
@@ -476,8 +555,6 @@ class ChapterListView(APIView):
             total_lessons = lessons.count()
 
             completed_lessons = 0
-            # lesson_ids = [str(lesson.id) for lesson in lessons]
-            
             lesson_ids = [str(lesson.name) for lesson in lessons]
 
             # Only calculate progress if the user is authenticated
@@ -506,10 +583,14 @@ class ChapterListView(APIView):
 
             data.append(chapter_data)
 
-        return Response(data, status=status.HTTP_200_OK)
+        return Response({
+            "success": True,
+            "message": "Chapters retrieved successfully.",
+            "data": data
+        }, status=status.HTTP_200_OK)
+
 
     
-
 class ChapterLessonsView(APIView):
     permission_classes = [AllowAny]  # Allow all users to access
 
@@ -535,7 +616,11 @@ class ChapterLessonsView(APIView):
 
             data.append(lesson_data)
 
-        return Response(data, status=status.HTTP_200_OK)
+        return Response({
+            "success": True,
+            "message": "Lessons retrieved successfully.",
+            "data": data
+        }, status=status.HTTP_200_OK)
 
 
 class ChapterLessonDetailView(APIView):
@@ -547,7 +632,11 @@ class ChapterLessonDetailView(APIView):
         try:
             step = int(request.query_params.get('step', 0))
         except (TypeError, ValueError):
-            return Response({"detail": "Invalid step value"}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({
+                "success": False,
+                "message": "Invalid step value",
+                "data": None
+            }, status=status.HTTP_400_BAD_REQUEST)
 
         PAGE_SIZE = 10
         start_index = step * PAGE_SIZE
@@ -557,7 +646,11 @@ class ChapterLessonDetailView(APIView):
         total = lesson_qs.count()
 
         if start_index >= total:
-            return Response({"detail": "No content available for this page."}, status=status.HTTP_404_NOT_FOUND)
+            return Response({
+                "success": False,
+                "message": "No content available for this page.",
+                "data": None
+            }, status=status.HTTP_404_NOT_FOUND)
 
         current_page_items = lesson_qs[start_index:end_index]
 
@@ -578,11 +671,16 @@ class ChapterLessonDetailView(APIView):
         serializer = LessonContentModelSerializer(current_page_items, many=True)
 
         return Response({
-            "step": step,
-            "total_items": total,
-            "completion_percentage": completion_percentage,
-            "content": serializer.data
+            "success": True,
+            "message": "Lesson content retrieved successfully.",
+            "data": {
+                "step": step,
+                "total_items": total,
+                "completion_percentage": completion_percentage,
+                "content": serializer.data
+            }
         }, status=status.HTTP_200_OK)
+
 
 
     
@@ -595,7 +693,12 @@ class GuideSupportView(APIView):
     def get(self, request):
         guides = GuidesSupport.objects.all().order_by('id')
         serializer = GuidesSupportModelSerializer(guides, many=True)
-        return Response(serializer.data, status=status.HTTP_200_OK)
+        
+        return Response({
+            "success": True,
+            "message": "Guides retrieved successfully.",
+            "data": serializer.data
+        }, status=status.HTTP_200_OK)
 
 
 class GuideSupportContentView(APIView):
@@ -609,8 +712,11 @@ class GuideSupportContentView(APIView):
         try:
             step = int(request.query_params.get("step", 0))
         except (TypeError, ValueError):
-            return Response({"detail": "step must be an integer."},
-                            status=status.HTTP_400_BAD_REQUEST)
+            return Response({
+                "success": False,
+                "message": "Step must be an integer.",
+                "data": None
+            }, status=status.HTTP_400_BAD_REQUEST)
 
         guide = get_object_or_404(GuidesSupport, pk=guide_id)
         title = guide.title
@@ -624,8 +730,11 @@ class GuideSupportContentView(APIView):
         end = start + self.PAGE_SIZE
 
         if start >= total:
-            return Response({"detail": "No content available for this page."},
-                            status=status.HTTP_404_NOT_FOUND)
+            return Response({
+                "success": False,
+                "message": "No content available for this page.",
+                "data": None
+            }, status=status.HTTP_404_NOT_FOUND)
 
         current_items = contents_qs[start:end]
 
@@ -642,11 +751,16 @@ class GuideSupportContentView(APIView):
             })
 
         return Response({
-            "title": title,
-            "step": step,
-            "total_items": total,
-            "content": content_data,
+            "success": True,
+            "message": "Guide content retrieved successfully.",
+            "data": {
+                "title": title,
+                "step": step,
+                "total_items": total,
+                "content": content_data
+            }
         }, status=status.HTTP_200_OK)
+
 
 
 
@@ -660,7 +774,19 @@ class SubscriptionPlanViewSet(viewsets.ReadOnlyModelViewSet):
     """
     queryset = SubscriptionPlan.objects.all().order_by('price')
     serializer_class = SubscriptionPlanSerializer
-    permission_classes = [AllowAny] # Anyone can see the available plans
+    permission_classes = [AllowAny]  # Anyone can see the available plans
+
+    def list(self, request, *args, **kwargs):
+        """
+        Overriding the default list method to match the response structure.
+        """
+        response_data = super().list(request, *args, **kwargs)
+        return Response({
+            "success": True,
+            "message": "Subscription plans retrieved successfully.",
+            "data": response_data.data
+        }, status=status.HTTP_200_OK)
+
 
 class UserSubscriptionViewSet(viewsets.GenericViewSet):
     """
@@ -683,12 +809,19 @@ class UserSubscriptionViewSet(viewsets.GenericViewSet):
         Retrieves the current user's subscription status.
         """
         try:
-            user_subscription = self.get_queryset().get() # Should be OneToOne, so get() works
+            user_subscription = self.get_queryset().get()  # Should be OneToOne, so get() works
             serializer = self.get_serializer(user_subscription)
-            return Response(serializer.data)
+            return Response({
+                "success": True,
+                "message": "User subscription retrieved successfully.",
+                "data": serializer.data
+            }, status=status.HTTP_200_OK)
         except UserSubscription.DoesNotExist:
-            return Response({"message": "No active subscription found for this user."},
-                            status=status.HTTP_404_NOT_FOUND)
+            return Response({
+                "success": False,
+                "message": "No active subscription found for this user.",
+                "data": None
+            }, status=status.HTTP_404_NOT_FOUND)
 
     @action(detail=False, methods=['post'])
     def subscribe(self, request):
@@ -699,12 +832,20 @@ class UserSubscriptionViewSet(viewsets.GenericViewSet):
         """
         plan_id = request.data.get('plan_id')
         if not plan_id:
-            return Response({"error": "Plan ID is required."}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({
+                "success": False,
+                "message": "Plan ID is required.",
+                "data": None
+            }, status=status.HTTP_400_BAD_REQUEST)
 
         try:
             plan = SubscriptionPlan.objects.get(id=plan_id)
         except SubscriptionPlan.DoesNotExist:
-            return Response({"error": "Subscription plan not found."}, status=status.HTTP_404_NOT_FOUND)
+            return Response({
+                "success": False,
+                "message": "Subscription plan not found.",
+                "data": None
+            }, status=status.HTTP_404_NOT_FOUND)
 
         with transaction.atomic():  # Ensure atomicity of database operations
             user = request.user
@@ -716,21 +857,18 @@ class UserSubscriptionViewSet(viewsets.GenericViewSet):
             user_subscription.start_date = timezone.now()
             user_subscription.last_renewed = timezone.now()
 
-        
             if plan.duration_days:
                 user_subscription.end_date = user_subscription.start_date + timedelta(days=plan.duration_days)
             else:
-                user_subscription.end_date = None 
+                user_subscription.end_date = None
 
             user_subscription.save()
 
-            
             if plan.duration_days is None:
                 try:
-                    profile = request.user.profile 
+                    profile = request.user.profile
                     evaluation = UserEvaluation.objects.get(user=profile)
                 except UserEvaluation.DoesNotExist:
-                
                     evaluation = UserEvaluation.objects.create(
                         user=profile,
                         PracticeCompleted='0',
@@ -743,8 +881,11 @@ class UserSubscriptionViewSet(viewsets.GenericViewSet):
                 evaluation.save()
 
             serializer = self.get_serializer(user_subscription)
-            return Response(serializer.data, status=status.HTTP_200_OK if not created else status.HTTP_201_CREATED)
-
+            return Response({
+                "success": True,
+                "message": "Subscription updated successfully." if not created else "Subscription created successfully.",
+                "data": serializer.data
+            }, status=status.HTTP_200_OK if not created else status.HTTP_201_CREATED)
 
     @action(detail=False, methods=['post'])
     def cancel(self, request):
@@ -755,16 +896,27 @@ class UserSubscriptionViewSet(viewsets.GenericViewSet):
         try:
             user_subscription = self.get_queryset().get()
             if not user_subscription.is_active:
-                return Response({"message": "Subscription is already inactive."},
-                                status=status.HTTP_400_BAD_REQUEST)
+                return Response({
+                    "success": False,
+                    "message": "Subscription is already inactive.",
+                    "data": None
+                }, status=status.HTTP_400_BAD_REQUEST)
 
             user_subscription.is_active = False
             user_subscription.save()
             serializer = self.get_serializer(user_subscription)
-            return Response(serializer.data, status=status.HTTP_200_OK)
+            return Response({
+                "success": True,
+                "message": "Subscription canceled successfully.",
+                "data": serializer.data
+            }, status=status.HTTP_200_OK)
         except UserSubscription.DoesNotExist:
-            return Response({"message": "No active subscription found to cancel."},
-                            status=status.HTTP_404_NOT_FOUND)
+            return Response({
+                "success": False,
+                "message": "No active subscription found to cancel.",
+                "data": None
+            }, status=status.HTTP_404_NOT_FOUND)
+
 
 
 
@@ -801,7 +953,12 @@ class PracticeChapterList(APIView):
 
             data.append(chapter_data)
 
-        return Response(data, status=status.HTTP_200_OK)
+        return Response({
+            "success": True,
+            "message": "Chapters retrieved successfully.",
+            "data": data
+        }, status=status.HTTP_200_OK)
+
 
 
 '''
@@ -847,8 +1004,12 @@ class PracticeQuestionListView(APIView):
         questions = Question.objects.filter(type="practice", chapter_id=chapter_id).order_by("id")
         serialized = QuestionSerializer(questions, many=True).data
         return Response({
-            "total": questions.count(),
-            "questions": serialized
+            "success": True,
+            "message": "Practice questions retrieved successfully.",
+            "data": {
+                "total": questions.count(),
+                "questions": serialized
+            }
         }, status=status.HTTP_200_OK)
 
 '''
@@ -950,7 +1111,11 @@ class SubmitAnswersView(APIView):
         answers = request.data.get("answers", [])
 
         if not answers:
-            return Response({"detail": "Answers list is required."}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({
+                "success": False,
+                "message": "Answers list is required.",
+                "data": None
+            }, status=status.HTTP_400_BAD_REQUEST)
 
         progress_obj, _ = ChapterProgress.objects.get_or_create(user=user, chapter_id=chapter_id)
 
@@ -986,12 +1151,17 @@ class SubmitAnswersView(APIView):
         progress_obj.update_completion()
 
         return Response({
-            "completed": True,
-            "total_questions": len(answers),
-            "correct_answers": correct_count,
-            "completion_percentage": progress_obj.completion_percentage,
-            "results": results
+            "success": True,
+            "message": "Answers submitted successfully.",
+            "data": {
+                "completed": True,
+                "total_questions": len(answers),
+                "correct_answers": correct_count,
+                "completion_percentage": progress_obj.completion_percentage,
+                "results": results
+            }
         }, status=status.HTTP_200_OK)
+
 
 
 # ______________-----------------------------------Mock Test--------------------------------______________
@@ -1030,7 +1200,12 @@ class MockTestHomeViewSet(APIView):
                 "best_score": f"{best_score}%"
             }
 
-        return Response(response_data, status=status.HTTP_200_OK)
+        return Response({
+            "success": True,
+            "message": "Mock test configuration retrieved successfully.",
+            "data": response_data
+        }, status=status.HTTP_200_OK)
+
 
 
 
@@ -1134,7 +1309,11 @@ class MockTestViewSet(viewsets.ViewSet):
         questions = list(Question.objects.filter(type="mockTest"))
 
         if len(questions) < total_questions:
-            return Response({'error': 'Not enough questions to start the test.'}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({
+                "success": False,
+                "message": "Not enough questions to start the test.",
+                "data": None
+            }, status=status.HTTP_400_BAD_REQUEST)
 
         selected_questions = random.sample(questions, total_questions)
         session = MockTestSession.objects.create(user=request.user, total_questions=total_questions)
@@ -1157,11 +1336,14 @@ class MockTestViewSet(viewsets.ViewSet):
         evaluation.save(update_fields=['MockTestTaken'])
 
         return Response({
-            "session_id": session.id,
-            "questions": answer_map
+            "success": True,
+            "message": "Mock test session started successfully.",
+            "data": {
+                "session_id": session.id,
+                "questions": answer_map
+            }
         }, status=status.HTTP_200_OK)
-    
-    
+
     def retrieve(self, request, pk=None):
         session = get_object_or_404(MockTestSession, pk=pk, user=request.user)
         answers = session.answers.select_related('question').prefetch_related('selected_choices', 'question__options')
@@ -1172,10 +1354,15 @@ class MockTestViewSet(viewsets.ViewSet):
                 'selected_choices': list(a.selected_choices.values_list('id', flat=True)),
                 'is_correct': a.is_correct
             })
-        return Response({'session_id': session.id, 'answers': data})
-    
-
-    # single answer submit features
+        
+        return Response({
+            "success": True,
+            "message": "Mock test session retrieved successfully.",
+            "data": {
+                "session_id": session.id,
+                "answers": data
+            }
+        })
 
     @action(detail=True, methods=['post'])
     def answer(self, request, pk=None):
@@ -1184,24 +1371,41 @@ class MockTestViewSet(viewsets.ViewSet):
         choice_ids = request.data.get('selected_choice_ids', [])
 
         if question_id is None or not isinstance(choice_ids, list):
-            return Response({'error': 'Both "question" and "selected_choice_ids" are required.'}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({
+                "success": False,
+                "message": 'Both "question" and "selected_choice_ids" are required.',
+                "data": None
+            }, status=status.HTTP_400_BAD_REQUEST)
 
         try:
             answer = MockTestAnswer.objects.get(session=session, question_id=question_id)
         except MockTestAnswer.DoesNotExist:
-            return Response({'error': 'Question not found in this session.'}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({
+                "success": False,
+                "message": 'Question not found in this session.',
+                "data": None
+            }, status=status.HTTP_400_BAD_REQUEST)
 
         valid_choice_ids = set(answer.question.options.values_list('id', flat=True))
         if not set(choice_ids).issubset(valid_choice_ids):
-            return Response({'error': 'One or more choices are invalid for this question.'}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({
+                "success": False,
+                "message": 'One or more choices are invalid for this question.',
+                "data": None
+            }, status=status.HTTP_400_BAD_REQUEST)
 
         answer.selected_choices.set(choice_ids)
         correct_ids = set(answer.question.options.filter(is_correct=True).values_list('id', flat=True))
         answer.is_correct = set(choice_ids) == correct_ids
         answer.save()
 
-        return Response({'correct': answer.is_correct})
-    
+        return Response({
+            "success": True,
+            "message": 'Answer submitted successfully.',
+            "data": {
+                'correct': answer.is_correct
+            }
+        })
 
     @action(detail=True, methods=['post'])
     def finish(self, request, pk=None):
@@ -1223,13 +1427,20 @@ class MockTestViewSet(viewsets.ViewSet):
         evaluation.WrongAnswered = str(int(evaluation.WrongAnswered or "0") + wrong)
         evaluation.save(update_fields=['QuestionAnswered', 'CorrectAnswered', 'WrongAnswered'])
 
-        return Response(MockTestResultSerializer(session).data)
+        return Response({
+            "success": True,
+            "message": "Mock test session finished successfully.",
+            "data": MockTestResultSerializer(session).data
+        })
 
     @action(detail=False, methods=['get'])
     def history(self, request):
         sessions = MockTestSession.objects.filter(user=request.user, finished_at__isnull=False).order_by('-finished_at')
-        return Response(MockTestResultSerializer(sessions, many=True).data)
-
+        return Response({
+            "success": True,
+            "message": "Mock test history retrieved successfully.",
+            "data": MockTestResultSerializer(sessions, many=True).data
+        })
 
     @action(detail=True, methods=['post'])
     def submit_all_answers(self, request, pk=None):
@@ -1237,7 +1448,11 @@ class MockTestViewSet(viewsets.ViewSet):
         submitted_answers = request.data.get('answers', [])
 
         if not isinstance(submitted_answers, list):
-            return Response({'error': 'answers must be a list of question and choices.'}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({
+                "success": False,
+                "message": 'Answers must be a list of question and choices.',
+                "data": None
+            }, status=status.HTTP_400_BAD_REQUEST)
 
         correct_count = 0
         total = session.answers.count()
@@ -1280,7 +1495,12 @@ class MockTestViewSet(viewsets.ViewSet):
         evaluation.WrongAnswered = str(int(evaluation.WrongAnswered or "0") + wrong_count)
         evaluation.save(update_fields=['QuestionAnswered', 'CorrectAnswered', 'WrongAnswered'])
 
-        return Response(MockTestResultSerializer(session).data, status=status.HTTP_200_OK)
+        return Response({
+            "success": True,
+            "message": "All answers submitted and test session finished.",
+            "data": MockTestResultSerializer(session).data
+        }, status=status.HTTP_200_OK)
+
 
 
 
@@ -1290,9 +1510,13 @@ class FreeMockTestViewSet(viewsets.ViewSet):
     @action(detail=False, methods=['post'])
     def start(self, request):
         total_questions = 24
-        questions = list(Question.objects.filter(type = "freeMockTest"))
+        questions = list(Question.objects.filter(type="freeMockTest"))
         if len(questions) < total_questions:
-            return Response({'error': 'Not enough questions to start the test.'}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({
+                "success": False,
+                "message": "Not enough questions to start the test.",
+                "data": None
+            }, status=status.HTTP_400_BAD_REQUEST)
 
         selected_questions = random.sample(questions, total_questions)
         session = FreeMockTestSession.objects.create(user=request.user, total_questions=total_questions)
@@ -1300,7 +1524,11 @@ class FreeMockTestViewSet(viewsets.ViewSet):
         for q in selected_questions:
             FreeMockTestAnswer.objects.create(session=session, question=q)
 
-        return Response(FreeStartMockTestSerializer(session).data)
+        return Response({
+            "success": True,
+            "message": "Free mock test session started successfully.",
+            "data": FreeStartMockTestSerializer(session).data
+        })
 
     def retrieve(self, request, pk=None):
         session = get_object_or_404(FreeMockTestSession, pk=pk, user=request.user)
@@ -1322,10 +1550,13 @@ class FreeMockTestViewSet(viewsets.ViewSet):
             })
 
         return Response({
-            'session_id': session.id,
-            'questions': questions_data
+            "success": True,
+            "message": "Free mock test session retrieved successfully.",
+            "data": {
+                'session_id': session.id,
+                'questions': questions_data
+            }
         })
-
 
     @action(detail=True, methods=['post'])
     def answer(self, request, pk=None):
@@ -1334,19 +1565,29 @@ class FreeMockTestViewSet(viewsets.ViewSet):
         choice_ids = request.data.get('selected_choice_ids', [])
 
         if question_id is None or not isinstance(choice_ids, list):
-            return Response({'error': 'Both "question" and "selected_choice_ids" are required and choice_ids must be a list.'},
-                            status=status.HTTP_400_BAD_REQUEST)
+            return Response({
+                "success": False,
+                "message": 'Both "question" and "selected_choice_ids" are required and choice_ids must be a list.',
+                "data": None
+            }, status=status.HTTP_400_BAD_REQUEST)
 
         try:
             answer = FreeMockTestAnswer.objects.get(session=session, question_id=question_id)
         except FreeMockTestAnswer.DoesNotExist:
-            return Response({'error': 'Question not found in this session.'}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({
+                "success": False,
+                "message": 'Question not found in this session.',
+                "data": None
+            }, status=status.HTTP_400_BAD_REQUEST)
 
         # Check if choices belong to the question
         valid_choice_ids = set(answer.question.options.values_list('id', flat=True))
         if not set(choice_ids).issubset(valid_choice_ids):
-            return Response({'error': 'One or more selected choices are invalid for this question.'},
-                            status=status.HTTP_400_BAD_REQUEST)
+            return Response({
+                "success": False,
+                "message": 'One or more selected choices are invalid for this question.',
+                "data": None
+            }, status=status.HTTP_400_BAD_REQUEST)
 
         # Save selected choices
         answer.selected_choices.set(choice_ids)
@@ -1356,7 +1597,11 @@ class FreeMockTestViewSet(viewsets.ViewSet):
         answer.is_correct = set(choice_ids) == correct_ids
         answer.save()
 
-        return Response({'correct': answer.is_correct})
+        return Response({
+            "success": True,
+            "message": 'Answer submitted successfully.',
+            "data": {'correct': answer.is_correct}
+        })
 
     @action(detail=True, methods=['post'])
     def finish(self, request, pk=None):
@@ -1366,13 +1611,20 @@ class FreeMockTestViewSet(viewsets.ViewSet):
         session.score = round((correct / total) * 100)
         session.finished_at = timezone.now()
         session.save()
-        return Response(FreeMockTestResultSerializer(session).data)
+        return Response({
+            "success": True,
+            "message": "Free mock test session finished successfully.",
+            "data": FreeMockTestResultSerializer(session).data
+        })
 
     @action(detail=False, methods=['get'])
     def history(self, request):
         sessions = FreeMockTestSession.objects.filter(user=request.user, finished_at__isnull=False).order_by('-finished_at')
-        return Response(FreeMockTestResultSerializer(sessions, many=True).data)
-    
+        return Response({
+            "success": True,
+            "message": "Free mock test history retrieved successfully.",
+            "data": FreeMockTestResultSerializer(sessions, many=True).data
+        })
 
     @action(detail=True, methods=['post'])
     def submit_all_answers(self, request, pk=None):
@@ -1380,7 +1632,11 @@ class FreeMockTestViewSet(viewsets.ViewSet):
 
         answers_data = request.data.get('answers', [])
         if not isinstance(answers_data, list):
-            return Response({'error': '"answers" must be a list.'}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({
+                "success": False,
+                "message": '"answers" must be a list.',
+                "data": None
+            }, status=status.HTTP_400_BAD_REQUEST)
 
         total = 0
         correct = 0
@@ -1429,13 +1685,18 @@ class FreeMockTestViewSet(viewsets.ViewSet):
         session.save()
 
         return Response({
-            'session_id': session.id,
-            'score': session.score,
-            'total_questions': total,
-            'correct_answers': correct,
-            'wrong_answers': total - correct,
-            'results': detailed_results
+            'success': True,
+            'message': 'All answers submitted and test session finished.',
+            'data': {
+                'session_id': session.id,
+                'score': session.score,
+                'total_questions': total,
+                'correct_answers': correct,
+                'wrong_answers': total - correct,
+                'results': detailed_results
+            }
         }, status=status.HTTP_200_OK)
+
 
 
 
@@ -1447,7 +1708,11 @@ class UploadCSVAPIView(APIView):
     def post(self, request, *args, **kwargs):
         csv_file = request.FILES.get("file")
         if not csv_file:
-            return Response({"error": "CSV file is required."}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({
+                "success": False,
+                "message": "CSV file is required.",
+                "data": None
+            }, status=status.HTTP_400_BAD_REQUEST)
 
         try:
             decoded_file = TextIOWrapper(csv_file.file, encoding='utf-8')
@@ -1459,7 +1724,11 @@ class UploadCSVAPIView(APIView):
                     try:
                         chapter = Chapter.objects.get(id=chapter_id)
                     except Chapter.DoesNotExist:
-                        return Response({"error": f"Chapter with id {chapter_id} not found."}, status=status.HTTP_400_BAD_REQUEST)
+                        return Response({
+                            "success": False,
+                            "message": f"Chapter with id {chapter_id} not found.",
+                            "data": None
+                        }, status=status.HTTP_400_BAD_REQUEST)
 
                     question = Question.objects.create(
                         chapter=chapter,
@@ -1480,7 +1749,15 @@ class UploadCSVAPIView(APIView):
                                 is_correct=is_correct
                             )
 
-            return Response({"message": "Questions uploaded successfully."}, status=status.HTTP_201_CREATED)
+            return Response({
+                "success": True,
+                "message": "Questions uploaded successfully.",
+                "data": None
+            }, status=status.HTTP_201_CREATED)
 
         except Exception as e:
-            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({
+                "success": False,
+                "message": str(e),
+                "data": None
+            }, status=status.HTTP_400_BAD_REQUEST)
