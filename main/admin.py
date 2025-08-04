@@ -42,14 +42,6 @@ admin.site.register(LessonContent, LessonContentModelAdmin)
 
 
 
-# class QuestionModelAdmin(admin.ModelAdmin):
-#     list_display = (
-#         'id', 'title', 'description', 'chapter', 'options', 'image'
-#     )
-# admin.site.register(Question, QuestionModelAdmin)
-
-
-
 class ProfileModelAdmin(admin.ModelAdmin):
     list_display = (
         'id', 'full_name', 'image', 'created_at'
@@ -81,9 +73,6 @@ admin.site.register(GuideSupportContent, GuideSupportContentModelAdmin)
 
 
 class QuestionOptionAdmin(admin.ModelAdmin):
-    # list_display = (
-    #     'id', 'question', 'text', 'is_correct'
-    # )
     list_display = ('id', 'question', 'text', 'is_correct')
     list_filter = ('question', 'is_correct')
     search_fields = ('question__question_text', 'text')
