@@ -388,8 +388,28 @@ class UserEvaluationView(APIView):
 class HomePageAdminView(generics.ListCreateAPIView):
     queryset = HomePage.objects.all()
     serializer_class = HomePageModelSerializer
-    # authentication_classes = [TokenAuthentication]
     permission_classes = [IsAdminUser]
+
+    def list(self, request, *args, **kwargs):
+        queryset = self.get_queryset()
+        serializer = self.get_serializer(queryset, many=True)
+        
+        return Response({
+            "success": True,
+            "message": "Home page data fetched successfully.",
+            "data": serializer.data
+        }, status=status.HTTP_200_OK)
+
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        self.perform_create(serializer)
+
+        return Response({
+            "success": True,
+            "message": "Profile updated successfully.",
+            "data": serializer.data
+        }, status=status.HTTP_201_CREATED)
 
 
 class QuestionAdminView(generics.ListCreateAPIView):
@@ -398,6 +418,27 @@ class QuestionAdminView(generics.ListCreateAPIView):
     # authentication_classes = [TokenAuthentication]
     permission_classes = [IsAdminUser]
 
+    def list(self, request, *args, **kwargs):
+        queryset = self.get_queryset()
+        serializer = self.get_serializer(queryset, many=True)
+
+        return Response({
+            "success": True,
+            "message": "Questions fetched successfully.",
+            "data": serializer.data
+        }, status=status.HTTP_200_OK)
+
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        self.perform_create(serializer)
+
+        return Response({
+            "success": True,
+            "message": "Question created successfully.",
+            "data": serializer.data
+        }, status=status.HTTP_201_CREATED)
+
 
 class QuestionOptionAdminView(generics.ListCreateAPIView):
     queryset = QuestionOption.objects.all()
@@ -405,12 +446,53 @@ class QuestionOptionAdminView(generics.ListCreateAPIView):
     # authentication_classes = [TokenAuthentication]
     permission_classes = [IsAdminUser]
 
+    def list(self, request, *args, **kwargs):
+        queryset = self.get_queryset()
+        serializer = self.get_serializer(queryset, many=True)
+
+        return Response({
+            "success": True,
+            "message": "Question options fetched successfully.",
+            "data": serializer.data
+        }, status=status.HTTP_200_OK)
+
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        self.perform_create(serializer)
+
+        return Response({
+            "success": True,
+            "message": "Question option created successfully.",
+            "data": serializer.data
+        }, status=status.HTTP_201_CREATED)
 
 class LessonAdminView(generics.ListCreateAPIView):
     queryset = Lesson.objects.all()
     serializer_class = LessonModelSerializers
     # authentication_classes = [TokenAuthentication]
     permission_classes = [IsAdminUser]
+
+    def list(self, request, *args, **kwargs):
+        queryset = self.get_queryset()
+        serializer = self.get_serializer(queryset, many=True)
+
+        return Response({
+            "success": True,
+            "message": "Lessons fetched successfully.",
+            "data": serializer.data
+        }, status=status.HTTP_200_OK)
+
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        self.perform_create(serializer)
+
+        return Response({
+            "success": True,
+            "message": "Lesson created successfully.",
+            "data": serializer.data
+        }, status=status.HTTP_201_CREATED)
     
     
 class LessonContentAdminView(generics.ListCreateAPIView):
@@ -419,12 +501,54 @@ class LessonContentAdminView(generics.ListCreateAPIView):
     authentication_classes = [TokenAuthentication]
     permission_classes = [IsAdminUser]
 
+    def list(self, request, *args, **kwargs):
+        queryset = self.get_queryset()
+        serializer = self.get_serializer(queryset, many=True)
+
+        return Response({
+            "success": True,
+            "message": "Lesson contents fetched successfully.",
+            "data": serializer.data
+        }, status=status.HTTP_200_OK)
+
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        self.perform_create(serializer)
+
+        return Response({
+            "success": True,
+            "message": "Lesson content created successfully.",
+            "data": serializer.data
+        }, status=status.HTTP_201_CREATED)
+
 
 class ChapterAdminView(generics.ListCreateAPIView):
     queryset = Chapter.objects.all()
     serializer_class = ChapterModelSerializer
     # authentication_classes = [TokenAuthentication]
     permission_classes = [IsAdminUser]
+
+    def list(self, request, *args, **kwargs):
+        queryset = self.get_queryset()
+        serializer = self.get_serializer(queryset, many=True)
+
+        return Response({
+            "success": True,
+            "message": "Chapters fetched successfully.",
+            "data": serializer.data
+        }, status=status.HTTP_200_OK)
+
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        self.perform_create(serializer)
+
+        return Response({
+            "success": True,
+            "message": "Chapter created successfully.",
+            "data": serializer.data
+        }, status=status.HTTP_201_CREATED)
 
 
 class GuideSupportAdminView(generics.ListCreateAPIView):
@@ -433,6 +557,27 @@ class GuideSupportAdminView(generics.ListCreateAPIView):
     # authentication_classes = [TokenAuthentication]
     permission_classes = [IsAdminUser]
 
+    def list(self, request, *args, **kwargs):
+        queryset = self.get_queryset()
+        serializer = self.get_serializer(queryset, many=True)
+
+        return Response({
+            "success": True,
+            "message": "Guide support entries fetched successfully.",
+            "data": serializer.data
+        }, status=status.HTTP_200_OK)
+
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        self.perform_create(serializer)
+
+        return Response({
+            "success": True,
+            "message": "Guide support entry created successfully.",
+            "data": serializer.data
+        }, status=status.HTTP_201_CREATED)
+
 
 class GuideSupportContentAdminView(generics.ListCreateAPIView):
     queryset = GuideSupportContent.objects.all()
@@ -440,12 +585,54 @@ class GuideSupportContentAdminView(generics.ListCreateAPIView):
     # authentication_classes = [TokenAuthentication]
     permission_classes = [IsAdminUser]
 
+    def list(self, request, *args, **kwargs):
+        queryset = self.get_queryset()
+        serializer = self.get_serializer(queryset, many=True)
+
+        return Response({
+            "success": True,
+            "message": "Guide support contents fetched successfully.",
+            "data": serializer.data
+        }, status=status.HTTP_200_OK)
+
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        self.perform_create(serializer)
+
+        return Response({
+            "success": True,
+            "message": "Guide support content created successfully.",
+            "data": serializer.data
+        }, status=status.HTTP_201_CREATED)
+
 
 class SubscriptionPlanAdminView(generics.ListCreateAPIView):
     queryset = SubscriptionPlan.objects.all()
     serializer_class = SubscriptionPlanSerializer
     # authentication_classes = [TokenAuthentication]
     permission_classes = [IsAdminUser]
+
+    def list(self, request, *args, **kwargs):
+        queryset = self.get_queryset()
+        serializer = self.get_serializer(queryset, many=True)
+
+        return Response({
+            "success": True,
+            "message": "Subscription plans fetched successfully.",
+            "data": serializer.data
+        }, status=status.HTTP_200_OK)
+
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        self.perform_create(serializer)
+
+        return Response({
+            "success": True,
+            "message": "Subscription plan created successfully.",
+            "data": serializer.data
+        }, status=status.HTTP_201_CREATED)
 
 
 # --------------------------------------------------Admin details view--------------------------------------s
@@ -457,12 +644,74 @@ class HomePageDetailsAdminView(generics.RetrieveUpdateDestroyAPIView):
     permission_classes = [IsAdminUser]
     lookup_field = "pk"
 
+    def retrieve(self, request, *args, **kwargs):
+        instance = self.get_object()
+        serializer = self.get_serializer(instance)
+        return Response({
+            "success": True,
+            "message": "Home page details fetched successfully.",
+            "data": serializer.data
+        }, status=status.HTTP_200_OK)
+
+    def update(self, request, *args, **kwargs):
+        partial = kwargs.pop('partial', False)  # to handle PATCH vs PUT
+        instance = self.get_object()
+        serializer = self.get_serializer(instance, data=request.data, partial=partial)
+        serializer.is_valid(raise_exception=True)
+        self.perform_update(serializer)
+
+        return Response({
+            "success": True,
+            "message": "Home page updated successfully.",
+            "data": serializer.data
+        }, status=status.HTTP_200_OK)
+
+    def destroy(self, request, *args, **kwargs):
+        instance = self.get_object()
+        self.perform_destroy(instance)
+        return Response({
+            "success": True,
+            "message": "Home page deleted successfully.",
+            "data": None
+        }, status=status.HTTP_204_NO_CONTENT)
+
 class ChapterDetailsAdminView(generics.RetrieveUpdateDestroyAPIView):
     queryset = Chapter.objects.all()
     serializer_class = ChapterModelSerializer
     # authentication_classes = [TokenAuthentication]
     permission_classes = [IsAdminUser]
     lookup_field = "pk"
+
+    def retrieve(self, request, *args, **kwargs):
+        instance = self.get_object()
+        serializer = self.get_serializer(instance)
+        return Response({
+            "success": True,
+            "message": "Chapter details fetched successfully.",
+            "data": serializer.data
+        }, status=status.HTTP_200_OK)
+
+    def update(self, request, *args, **kwargs):
+        partial = kwargs.pop('partial', False)  # support PATCH vs PUT
+        instance = self.get_object()
+        serializer = self.get_serializer(instance, data=request.data, partial=partial)
+        serializer.is_valid(raise_exception=True)
+        self.perform_update(serializer)
+
+        return Response({
+            "success": True,
+            "message": "Chapter updated successfully.",
+            "data": serializer.data
+        }, status=status.HTTP_200_OK)
+
+    def destroy(self, request, *args, **kwargs):
+        instance = self.get_object()
+        self.perform_destroy(instance)
+        return Response({
+            "success": True,
+            "message": "Chapter deleted successfully.",
+            "data": None
+        }, status=status.HTTP_204_NO_CONTENT)
 
 
 class LessonAdminDetailsView(generics.RetrieveUpdateDestroyAPIView):
@@ -471,19 +720,112 @@ class LessonAdminDetailsView(generics.RetrieveUpdateDestroyAPIView):
     permission_classes = [IsAdminUser]
     lookup_field = "pk"
 
+    def retrieve(self, request, *args, **kwargs):
+        instance = self.get_object()
+        serializer = self.get_serializer(instance)
+        return Response({
+            "success": True,
+            "message": "Lesson details fetched successfully.",
+            "data": serializer.data
+        }, status=status.HTTP_200_OK)
+
+    def update(self, request, *args, **kwargs):
+        partial = kwargs.pop('partial', False)
+        instance = self.get_object()
+        serializer = self.get_serializer(instance, data=request.data, partial=partial)
+        serializer.is_valid(raise_exception=True)
+        self.perform_update(serializer)
+
+        return Response({
+            "success": True,
+            "message": "Lesson updated successfully.",
+            "data": serializer.data
+        }, status=status.HTTP_200_OK)
+
+    def destroy(self, request, *args, **kwargs):
+        instance = self.get_object()
+        self.perform_destroy(instance)
+        return Response({
+            "success": True,
+            "message": "Lesson deleted successfully.",
+            "data": None
+        }, status=status.HTTP_204_NO_CONTENT)
+
 class LessonDetailsAdminView(generics.RetrieveUpdateDestroyAPIView):
     queryset = Lesson.objects.all()
     serializer_class = LessonModelSerializers
     permission_classes = [IsAdminUser]
     lookup_field = "pk"
 
+    def retrieve(self, request, *args, **kwargs):
+        instance = self.get_object()
+        serializer = self.get_serializer(instance)
+        return Response({
+            "success": True,
+            "message": "Lesson details fetched successfully.",
+            "data": serializer.data
+        }, status=status.HTTP_200_OK)
+
+    def update(self, request, *args, **kwargs):
+        partial = kwargs.pop('partial', False)
+        instance = self.get_object()
+        serializer = self.get_serializer(instance, data=request.data, partial=partial)
+        serializer.is_valid(raise_exception=True)
+        self.perform_update(serializer)
+
+        return Response({
+            "success": True,
+            "message": "Lesson updated successfully.",
+            "data": serializer.data
+        }, status=status.HTTP_200_OK)
+
+    def destroy(self, request, *args, **kwargs):
+        instance = self.get_object()
+        self.perform_destroy(instance)
+        return Response({
+            "success": True,
+            "message": "Lesson deleted successfully.",
+            "data": None
+        }, status=status.HTTP_204_NO_CONTENT)
+
 
 class LessonContentDetailsAdminView(generics.RetrieveUpdateDestroyAPIView):
-    queryset = LessonContent
+    queryset = LessonContent.objects.all()
     serializer_class = LessonContentModelSerializer
     # authentication_classes = [TokenAuthentication]
     permission_classes = [IsAdminUser]
     lookup_field = "pk"
+
+    def retrieve(self, request, *args, **kwargs):
+        instance = self.get_object()
+        serializer = self.get_serializer(instance)
+        return Response({
+            "success": True,
+            "message": "Lesson content details fetched successfully.",
+            "data": serializer.data
+        }, status=status.HTTP_200_OK)
+
+    def update(self, request, *args, **kwargs):
+        partial = kwargs.pop('partial', False)
+        instance = self.get_object()
+        serializer = self.get_serializer(instance, data=request.data, partial=partial)
+        serializer.is_valid(raise_exception=True)
+        self.perform_update(serializer)
+
+        return Response({
+            "success": True,
+            "message": "Lesson content updated successfully.",
+            "data": serializer.data
+        }, status=status.HTTP_200_OK)
+
+    def destroy(self, request, *args, **kwargs):
+        instance = self.get_object()
+        self.perform_destroy(instance)
+        return Response({
+            "success": True,
+            "message": "Lesson content deleted successfully.",
+            "data": None
+        }, status=status.HTTP_204_NO_CONTENT)
 
 
 class QuestionDetailsAdminView(generics.RetrieveUpdateDestroyAPIView):
@@ -493,12 +835,74 @@ class QuestionDetailsAdminView(generics.RetrieveUpdateDestroyAPIView):
     permission_classes = [IsAdminUser]
     lookup_field = "pk"
 
+    def retrieve(self, request, *args, **kwargs):
+        instance = self.get_object()
+        serializer = self.get_serializer(instance)
+        return Response({
+            "success": True,
+            "message": "Question details fetched successfully.",
+            "data": serializer.data
+        }, status=status.HTTP_200_OK)
+
+    def update(self, request, *args, **kwargs):
+        partial = kwargs.pop('partial', False)
+        instance = self.get_object()
+        serializer = self.get_serializer(instance, data=request.data, partial=partial)
+        serializer.is_valid(raise_exception=True)
+        self.perform_update(serializer)
+
+        return Response({
+            "success": True,
+            "message": "Question updated successfully.",
+            "data": serializer.data
+        }, status=status.HTTP_200_OK)
+
+    def destroy(self, request, *args, **kwargs):
+        instance = self.get_object()
+        self.perform_destroy(instance)
+        return Response({
+            "success": True,
+            "message": "Question deleted successfully.",
+            "data": None
+        }, status=status.HTTP_204_NO_CONTENT)
+
 class QuestionOptionDetailsAdminView(generics.RetrieveUpdateDestroyAPIView):
     queryset = QuestionOption.objects.all()
     serializer_class = QuestionOptionSerializer
     # authentication_classes = [TokenAuthentication]
     permission_classes = [IsAdminUser]
     lookup_field = "pk"
+
+    def retrieve(self, request, *args, **kwargs):
+        instance = self.get_object()
+        serializer = self.get_serializer(instance)
+        return Response({
+            "success": True,
+            "message": "Question option details fetched successfully.",
+            "data": serializer.data
+        }, status=status.HTTP_200_OK)
+
+    def update(self, request, *args, **kwargs):
+        partial = kwargs.pop('partial', False)
+        instance = self.get_object()
+        serializer = self.get_serializer(instance, data=request.data, partial=partial)
+        serializer.is_valid(raise_exception=True)
+        self.perform_update(serializer)
+
+        return Response({
+            "success": True,
+            "message": "Question option updated successfully.",
+            "data": serializer.data
+        }, status=status.HTTP_200_OK)
+
+    def destroy(self, request, *args, **kwargs):
+        instance = self.get_object()
+        self.perform_destroy(instance)
+        return Response({
+            "success": True,
+            "message": "Question option deleted successfully.",
+            "data": None
+        }, status=status.HTTP_204_NO_CONTENT)
 
 
 class GuideSupportDetailsAdminView(generics.RetrieveUpdateDestroyAPIView):
@@ -508,19 +912,111 @@ class GuideSupportDetailsAdminView(generics.RetrieveUpdateDestroyAPIView):
     permission_classes = [IsAdminUser]
     lookup_field = "pk"
 
+    def retrieve(self, request, *args, **kwargs):
+        instance = self.get_object()
+        serializer = self.get_serializer(instance)
+        return Response({
+            "success": True,
+            "message": "Guide support details fetched successfully.",
+            "data": serializer.data
+        }, status=status.HTTP_200_OK)
+
+    def update(self, request, *args, **kwargs):
+        partial = kwargs.pop('partial', False)
+        instance = self.get_object()
+        serializer = self.get_serializer(instance, data=request.data, partial=partial)
+        serializer.is_valid(raise_exception=True)
+        self.perform_update(serializer)
+
+        return Response({
+            "success": True,
+            "message": "Guide support updated successfully.",
+            "data": serializer.data
+        }, status=status.HTTP_200_OK)
+
+    def destroy(self, request, *args, **kwargs):
+        instance = self.get_object()
+        self.perform_destroy(instance)
+        return Response({
+            "success": True,
+            "message": "Guide support deleted successfully.",
+            "data": None
+        }, status=status.HTTP_204_NO_CONTENT)
+
 class GuideSupportContentDetailsAdminView(generics.RetrieveUpdateDestroyAPIView):
-    queryset = GuidesSupport.objects.all()
-    serializer_class = GuidesSupportModelSerializer
+    queryset = GuideSupportContent.objects.all()
+    serializer_class = GuideSupportContentModelSerializer
     # authentication_classes = [TokenAuthentication]
     permission_classes = [IsAdminUser]
     lookup_field = "pk"
 
+    def retrieve(self, request, *args, **kwargs):
+        instance = self.get_object()
+        serializer = self.get_serializer(instance)
+        return Response({
+            "success": True,
+            "message": "Guide support content details fetched successfully.",
+            "data": serializer.data
+        }, status=status.HTTP_200_OK)
+
+    def update(self, request, *args, **kwargs):
+        partial = kwargs.pop('partial', False)
+        instance = self.get_object()
+        serializer = self.get_serializer(instance, data=request.data, partial=partial)
+        serializer.is_valid(raise_exception=True)
+        self.perform_update(serializer)
+
+        return Response({
+            "success": True,
+            "message": "Guide support content updated successfully.",
+            "data": serializer.data
+        }, status=status.HTTP_200_OK)
+
+    def destroy(self, request, *args, **kwargs):
+        instance = self.get_object()
+        self.perform_destroy(instance)
+        return Response({
+            "success": True,
+            "message": "Guide support content deleted successfully.",
+            "data": None
+        }, status=status.HTTP_204_NO_CONTENT)
 class SubscriptionPlanDetailsAdminView(generics.RetrieveUpdateDestroyAPIView):
     queryset = SubscriptionPlan.objects.all()
     serializer_class = SubscriptionPlanSerializer
     # authentication_classes = [TokenAuthentication]
     permission_classes = [IsAdminUser]
     lookup_field = "pk"
+
+    def retrieve(self, request, *args, **kwargs):
+        instance = self.get_object()
+        serializer = self.get_serializer(instance)
+        return Response({
+            "success": True,
+            "message": "Subscription plan details fetched successfully.",
+            "data": serializer.data
+        }, status=status.HTTP_200_OK)
+
+    def update(self, request, *args, **kwargs):
+        partial = kwargs.pop('partial', False)
+        instance = self.get_object()
+        serializer = self.get_serializer(instance, data=request.data, partial=partial)
+        serializer.is_valid(raise_exception=True)
+        self.perform_update(serializer)
+
+        return Response({
+            "success": True,
+            "message": "Subscription plan updated successfully.",
+            "data": serializer.data
+        }, status=status.HTTP_200_OK)
+
+    def destroy(self, request, *args, **kwargs):
+        instance = self.get_object()
+        self.perform_destroy(instance)
+        return Response({
+            "success": True,
+            "message": "Subscription plan deleted successfully.",
+            "data": None
+        }, status=status.HTTP_204_NO_CONTENT)
 
 # --------------------------------------------------------Study section--------------------------------------
 
