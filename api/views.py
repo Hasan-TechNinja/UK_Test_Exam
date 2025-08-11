@@ -498,7 +498,7 @@ class LessonAdminView(generics.ListCreateAPIView):
 class LessonContentAdminView(generics.ListCreateAPIView):
     queryset = LessonContent.objects.all()
     serializer_class = LessonContentModelSerializer
-    authentication_classes = [TokenAuthentication]
+    # authentication_classes = [TokenAuthentication]
     permission_classes = [IsAdminUser]
 
     def list(self, request, *args, **kwargs):

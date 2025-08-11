@@ -72,6 +72,8 @@ MIDDLEWARE = [
 
 ROOT_URLCONF = 'UK_Test_Exam.urls'
 
+# pip uninstall django-cors-headers
+
 
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:3000",  # Frontend running on port 3000
