@@ -80,10 +80,18 @@ class RegisterSerializer(serializers.ModelSerializer):
         EmailVerification.objects.create(user=user, code=code)
 
         send_mail(
-            'Your Verification Code',
-            f'Your verification code is {code}',
-            'noreply@example.com',
-            [email],
+            subject='Your Register Verification Code',
+            message=(
+                f"Hello {email},\n\n"
+                "Thank you for registering with us.\n"
+                f"Your verification code is: {code}\n\n"
+                "Please use this code to verify your account.\n"
+                "If you did not request this, please ignore this email.\n\n"
+                "Best regards,\n"
+                "The Life In The UK Team"
+            ),
+            from_email='noreply@example.com',
+            recipient_list=[email],
             fail_silently=False
         )
 

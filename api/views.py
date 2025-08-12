@@ -130,12 +130,27 @@ class ForgotPasswordView(APIView):
         code = str(random.randint(100000, 999999))
         PasswordResetCode.objects.update_or_create(user=user, defaults={"code": code})
 
-        # Send the code via email
+        if user.first_name and user.last_name:
+                name = f"{user.first_name} {user.last_name}"
+        elif user.email:
+            name = user.email
+        else:
+            name = user.username
+
         send_mail(
-            'Your Password Reset Code',
-            f'Your password reset code is: {code}',
-            'noreply@example.com',
-            [email],
+            subject='Password Reset Request',
+            message=(
+                f"Hello, {name}\n"
+                "We received a request to reset your account password.\n"
+                f"Your password reset code is: "
+                f"{code}\n\n"
+                "If you did not request this, please ignore this email.\n"
+                # "For security, this code will expire in 10 minutes.\n\n"
+                "Best regards,\n"
+                "The Life In The UK Team"
+            ),
+            from_email='noreply@example.com',
+            recipient_list=[email],
             fail_silently=False
         )
 
