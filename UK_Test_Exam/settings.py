@@ -46,7 +46,7 @@ INSTALLED_APPS = [
     'api',
     'subscriptions',
     # 'ckeditor',
-    'corsheaders',
+    # 'corsheaders',
     'rest_framework',
     'rest_framework.authtoken',
     'rest_framework_simplejwt',
@@ -60,7 +60,7 @@ X_FRAME_OPTIONS = "SAMEORIGIN"
 SILENCED_SYSTEM_CHECKS = ["security.W019"]
 
 MIDDLEWARE = [
-    'corsheaders.middleware.CorsMiddleware',
+    # 'corsheaders.middleware.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -75,10 +75,10 @@ ROOT_URLCONF = 'UK_Test_Exam.urls'
 # pip uninstall django-cors-headers
 
 
-CORS_ALLOWED_ORIGINS = [
-    "http://localhost:3000",  # Frontend running on port 3000
-    "http://localhost:8000",  # Backend running on port 8000 (if needed)
-]
+# CORS_ALLOWED_ORIGINS = [
+#     "http://localhost:3000",  # Frontend running on port 3000
+#     "http://localhost:8000",  # Backend running on port 8000 (if needed)
+# ]
 
 
 TEMPLATES = [
