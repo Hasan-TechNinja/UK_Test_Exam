@@ -26,15 +26,15 @@ urlpatterns = [
     path('subscriptionPlan/', views.SubscriptionPlanAdminView.as_view(), name = 'subscriptionPlan'),
     
     #admin details view
-    path('homeAdmin/<int:pk>', views.HomePageDetailsAdminView.as_view(), name='homeAdmin'),
-    path('chapterAdmin/<int:pk>', views.ChapterDetailsAdminView.as_view(), name='chapterAdmin'),
-    path('lessonAdmin/<int:pk>', views.LessonAdminDetailsView.as_view(), name='lessonAdmin'),
-    path('lessonContentAdmin/<int:pk>', views.LessonContentDetailsAdminView.as_view(), name='lessonContents'),
-    path('questionAdmin/<int:pk>', views.QuestionDetailsAdminView.as_view(), name='questionAdmin'),
-    path('questionOptionsAdmin/<int:pk>', views.QuestionOptionDetailsAdminView.as_view(), name='questionOptionsAdmin'),
-    path('guideAdmin/<int:pk>', views.GuideSupportDetailsAdminView.as_view(), name='guideAdmin'),
-    path('guideContentAdmin/<int:pk>', views.GuideSupportContentDetailsAdminView.as_view(), name='guideContentAdmin'),
-    path('subscriptionPlan/<int:pk>', views.SubscriptionPlanDetailsAdminView.as_view(), name = 'subscriptionPlan'),
+    path('homeAdmin/<int:pk>/', views.HomePageDetailsAdminView.as_view(), name='homeAdmin'),
+    path('chapterAdmin/<int:pk>/', views.ChapterDetailsAdminView.as_view(), name='chapterAdmin'),
+    path('lessonAdmin/<int:pk>/', views.LessonAdminDetailsView.as_view(), name='lessonAdmin'),
+    path('lessonContentAdmin/<int:pk>/', views.LessonContentDetailsAdminView.as_view(), name='lessonContents'),
+    path('questionAdmin/<int:pk>/', views.QuestionDetailsAdminView.as_view(), name='questionAdmin'),
+    path('questionOptionsAdmin/<int:pk>/', views.QuestionOptionDetailsAdminView.as_view(), name='questionOptionsAdmin'),
+    path('guideAdmin/<int:pk>/', views.GuideSupportDetailsAdminView.as_view(), name='guideAdmin'),
+    path('guideContentAdmin/<int:pk>/', views.GuideSupportContentDetailsAdminView.as_view(), name='guideContentAdmin'),
+    path('subscriptionPlan/<int:pk>/', views.SubscriptionPlanDetailsAdminView.as_view(), name = 'subscriptionPlan'),
 
     # authentication
     path('register/', views.RegisterView.as_view(), name='registration'),
@@ -49,7 +49,7 @@ urlpatterns = [
     # user study
     path('home/', views.HomePageView.as_view(), name="home"),
     path('chapters/', views.ChapterListView.as_view(), name="chapters"),
-    path('chapters/<int:pk>', views.ChapterLessonsView.as_view(), name="chapters"),
+    path('chapters/<int:pk>/', views.ChapterLessonsView.as_view(), name="chapters"),
     path('chapters/<int:chapter_id>/<int:lesson_id>/', views.ChapterLessonDetailView.as_view(), name="chapter-lesson-detail"),
 
     #Guide and support
