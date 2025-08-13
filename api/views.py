@@ -6,6 +6,7 @@ from datetime import timedelta
 import random
 from django.db.models import Max
 from django.contrib.auth.models import AnonymousUser
+from django.core.exceptions import ValidationError as DjangoValidationError
 
 from main.models import Lesson, Chapter, Profile, GuidesSupport, HomePage, GuideSupportContent, LessonContent, UserEvaluation, Question, QuestionOption, MockTestSession, MockTestAnswer, FreeMockTestSession, FreeMockTestAnswer, ChapterProgress, LessonProgress
 from subscriptions.models import SubscriptionPlan, UserSubscription
@@ -177,49 +178,52 @@ class ResetPasswordView(APIView):
 
         try:
             user = User.objects.get(email=email)
-            reset = PasswordResetCode.objects.get(user=user)
-
-            if reset.code != code:
-                return Response({
-                    "success": False,
-                    "message": "Invalid reset code.",
-                    "data": None
-                }, status=status.HTTP_400_BAD_REQUEST)
-
-            if reset.is_expired():
-                reset.delete()
-                return Response({
-                    "success": False,
-                    "message": "Reset code expired.",
-                    "data": None
-                }, status=status.HTTP_400_BAD_REQUEST)
-
-            # Validate password
-            validate_password(new_password, user=user)
-
-            user.set_password(new_password)
-            user.save()
-
-            reset.delete()
-
-            return Response({
-                "success": True,
-                "message": "Password reset successful.",
-                "data": None
-            }, status=status.HTTP_200_OK)
-
         except User.DoesNotExist:
             return Response({
                 "success": False,
                 "message": "User not found.",
                 "data": None
             }, status=status.HTTP_404_NOT_FOUND)
+
+        try:
+            # It's safer to fetch by both user and code to avoid a separate equality check
+            reset = PasswordResetCode.objects.get(user=user, code=code)
         except PasswordResetCode.DoesNotExist:
             return Response({
                 "success": False,
-                "message": "Reset code not found.",
+                "message": "Invalid or missing reset code.",
                 "data": None
             }, status=status.HTTP_404_NOT_FOUND)
+
+        if reset.is_expired():
+            reset.delete()
+            return Response({
+                "success": False,
+                "message": "Reset code expired.",
+                "data": None
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+        # Validate password and handle validation errors
+        try:
+            validate_password(new_password, user=user)
+        except DjangoValidationError as e:
+            return Response({
+                "success": False,
+                "message": "Password validation failed.",
+                "errors": e.messages,  # e.g. ["The password is too similar to the username."]
+                "data": None
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+        # Update password
+        user.set_password(new_password)
+        user.save()
+        reset.delete()
+
+        return Response({
+            "success": True,
+            "message": "Password reset successful.",
+            "data": None
+        }, status=status.HTTP_200_OK)
 
 
 
