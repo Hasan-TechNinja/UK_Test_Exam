@@ -35,11 +35,9 @@ admin.site.register(LessonProgress, LessonProgressAdmin)
 
 
 class LessonContentModelAdmin(admin.ModelAdmin):
-    list_display = (
-        'id', 'lesson', 'image', 'description', 'glossary', 'video'
-    )
+    list_display = ('id', 'lesson', 'image', 'description', 'glossary', 'video')
+    list_select_related = ('lesson', 'lesson__chapter')  # faster queries
 admin.site.register(LessonContent, LessonContentModelAdmin)
-
 
 
 class ProfileModelAdmin(admin.ModelAdmin):
