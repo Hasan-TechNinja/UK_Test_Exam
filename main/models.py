@@ -102,11 +102,24 @@ class LessonContent(models.Model):
     video = models.URLField(blank=True, null=True)
 
     def __str__(self):
-        # e.g. "Chapter 1 Lesson 2"
         if self.lesson_id:
             chapter_name = self.lesson.chapter.name if self.lesson.chapter_id else "No Chapter"
             return f"{chapter_name} {self.lesson.title}"
         return f"LessonContent #{self.pk}"
+
+    def set_glossary_string_list(self, data_list, delimiter=','):
+        """
+        Set the glossary field by joining a list of strings into a single string.
+        """
+        self.glossary = delimiter.join([str(item).strip() for item in data_list if item])
+
+    def get_glossary_string_list(self, delimiter=','):
+        """
+        Return the glossary field as a list of strings.
+        """
+        if self.glossary:
+            return [item.strip() for item in self.glossary.split(delimiter) if item.strip()]
+        return []
 
 
 
