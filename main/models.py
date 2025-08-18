@@ -88,7 +88,7 @@ class Lesson(models.Model):
     # status = models.BooleanField(default=False)
 
     def __str__(self):
-        return f"{self.chapter.name} {self.name}"
+        return f"{self.chapter.name} - Lesson {self.name}"
     
     class Meta:
         ordering = ['-created']
@@ -101,10 +101,8 @@ class LessonContent(models.Model):
     glossary = models.TextField(max_length=200, default="")
     video = models.URLField(blank=True, null=True)
 
-    # def __str__(self):
-    #     return f"{self.lesson.chapter.name} - {self.title} ({self.name})"
     def __str__(self):
-        return self.lesson.name
+        return f"{self.lesson.chapter.name} - Lesson {self.lesson.name}"
 
     def set_glossary_string_list(self, data_list, delimiter=','):
         """
