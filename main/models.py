@@ -102,7 +102,7 @@ class LessonContent(models.Model):
     video = models.URLField(blank=True, null=True)
 
     def __str__(self):
-        return f"{self.chapter.name} - {self.title} ({self.name})"
+        return f"{self.lesson.chapter.name} - {self.title} ({self.name})"
 
     def set_glossary_string_list(self, data_list, delimiter=','):
         """
