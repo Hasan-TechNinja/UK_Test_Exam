@@ -87,11 +87,11 @@ class Lesson(models.Model):
     # updated = models.DateTimeField(auto_now=True)
     # status = models.BooleanField(default=False)
 
-   def __str__(self):
-        chapter_name = self.chapter.name if self.chapter_id else "No Chapter"
-        # Choose ONE format you prefer:
-        # return f"{chapter_name} {self.title}"            # -> "Chapter 1 Lesson 2"
-        return f"{chapter_name} - {self.title} ({self.name})"
+    def __str__(self):
+        return f"{self.chapter.name} {self.name}"
+    
+    class Meta:
+        ordering = ['-created']
     
     
 class LessonContent(models.Model):
@@ -101,11 +101,10 @@ class LessonContent(models.Model):
     glossary = models.TextField(max_length=200, default="")
     video = models.URLField(blank=True, null=True)
 
+    # def __str__(self):
+    #     return f"{self.lesson.chapter.name} - {self.title} ({self.name})"
     def __str__(self):
-        if self.lesson_id:
-            chapter_name = self.lesson.chapter.name if self.lesson.chapter_id else "No Chapter"
-            return f"{chapter_name} {self.lesson.title}"
-        return f"LessonContent #{self.pk}"
+        return self.lesson.name
 
     def set_glossary_string_list(self, data_list, delimiter=','):
         """
