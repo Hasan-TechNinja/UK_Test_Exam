@@ -87,11 +87,11 @@ class Lesson(models.Model):
     # updated = models.DateTimeField(auto_now=True)
     # status = models.BooleanField(default=False)
 
-    def __str__(self):
-        return f"{self.chapter.name} {self.name}"
-    
-    class Meta:
-        ordering = ['-created']
+   def __str__(self):
+        chapter_name = self.chapter.name if self.chapter_id else "No Chapter"
+        # Choose ONE format you prefer:
+        # return f"{chapter_name} {self.title}"            # -> "Chapter 1 Lesson 2"
+        return f"{chapter_name} - {self.title} ({self.name})"
     
     
 class LessonContent(models.Model):
@@ -102,21 +102,11 @@ class LessonContent(models.Model):
     video = models.URLField(blank=True, null=True)
 
     def __str__(self):
-        return f"{self.lesson.chapter.name} - ({self.name})"
-
-    def set_glossary_string_list(self, data_list, delimiter=','):
-        """
-        Set the glossary field by joining a list of strings into a single string.
-        """
-        self.glossary = delimiter.join([str(item).strip() for item in data_list if item])
-
-    def get_glossary_string_list(self, delimiter=','):
-        """
-        Return the glossary field as a list of strings.
-        """
-        if self.glossary:
-            return [item.strip() for item in self.glossary.split(delimiter) if item.strip()]
-        return []
+        # e.g. "Chapter 1 Lesson 2"
+        if self.lesson_id:
+            chapter_name = self.lesson.chapter.name if self.lesson.chapter_id else "No Chapter"
+            return f"{chapter_name} {self.lesson.title}"
+        return f"LessonContent #{self.pk}"
 
 
 
