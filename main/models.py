@@ -88,7 +88,7 @@ class Lesson(models.Model):
     # status = models.BooleanField(default=False)
 
     def __str__(self):
-        return f"{self.chapter.name} - Lesson {self.name}"
+        return f"{self.chapter.name} - {self.name}"
     
     class Meta:
         ordering = ['-created']
