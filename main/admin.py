@@ -23,6 +23,7 @@ class LessonModelAdmin(admin.ModelAdmin):
     list_display = (
         'id', 'name', 'title', 'chapter', 'created',
     )
+    list_filter = ('chapter',)
 admin.site.register(Lesson, LessonModelAdmin)
 
 
@@ -36,7 +37,8 @@ admin.site.register(LessonProgress, LessonProgressAdmin)
 
 class LessonContentModelAdmin(admin.ModelAdmin):
     list_display = ('id', 'lesson', 'image', 'description', 'glossary', 'video')
-    list_select_related = ('lesson', 'lesson__chapter')  # faster queries
+    list_select_related = ('lesson', 'lesson__chapter')
+    list_filter = ('lesson', 'lesson__chapter')
 admin.site.register(LessonContent, LessonContentModelAdmin)
 
 
