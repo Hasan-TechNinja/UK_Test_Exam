@@ -665,6 +665,53 @@ class StudentView(APIView):
         }, status=status.HTTP_200_OK)
 
 
+class ChapterCountView(APIView):
+    def get(self, request):
+        chapter = Chapter.objects.count()
+        return Response({
+            "success": True,
+            "message": "Chapter count fetched successfully.",
+            "data": {
+                "chapter_count": chapter
+            }
+        }, status=status.HTTP_200_OK)
+
+
+class LessonCountView(APIView):
+    def get(self, request):
+        lesson = Lesson.objects.count()
+        return Response({
+            "success": True,
+            "message": "Lesson count fetched successfully.",
+            "data": {
+                "lesson_count": lesson
+            }
+        }, status=status.HTTP_200_OK)
+    
+
+class MockTestCount(APIView):
+    def get(self, request):
+        mock_test = MockTestAnswer.objects.count()
+        return Response({
+            "success": True,
+            "message": "Mock test count fetched successfully.",
+            "data": {
+                "mock_test_count": mock_test
+            }
+        }, status=status.HTTP_200_OK)
+
+
+class UserSubscriptionCount(APIView):
+    def get(self, request):
+        user_subscription = UserSubscription.objects.filter(is_active=True).count()
+        return Response({
+            "success": True,
+            "message": "User subscription count fetched successfully.",
+            "data": {
+                "user_subscription_count": user_subscription
+            }
+        }, status=status.HTTP_200_OK)
+
 # --------------------------------------------------Admin details view--------------------------------------s
 
 class HomePageDetailsAdminView(generics.RetrieveUpdateDestroyAPIView):

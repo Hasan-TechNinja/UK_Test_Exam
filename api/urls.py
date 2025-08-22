@@ -88,7 +88,11 @@ urlpatterns = [
     # question upload
     path("upload-questions/", views.UploadCSVAPIView.as_view(), name="upload-questions"),
 
-    path('student/', views.StudentView.as_view(), name='student')
+    path('student/', views.StudentView.as_view(), name='student'),
+    path('chapters/count/', views.ChapterCountView.as_view(), name='chapter-count'),
+    path('lessons/count/', views.LessonCountView.as_view(), name='lesson-count'),
+    path('mock-tests/count/', views.MockTestCount.as_view(), name='mock-test-count'),
+    path('subscription/count/', views.UserSubscriptionCount.as_view(), name='subscription-count'),
 
 ]
     
