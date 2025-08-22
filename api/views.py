@@ -652,6 +652,17 @@ class SubscriptionPlanAdminView(generics.ListCreateAPIView):
             "message": "Subscription plan created successfully.",
             "data": serializer.data
         }, status=status.HTTP_201_CREATED)
+    
+class StudentView(APIView):
+    def get(self, request):
+        student = len(User.objects.filter(is_staff=False, is_superuser=False))
+        return Response({
+            "success": True,
+            "message": "Student count fetched successfully.",
+            "data": {
+                "student_count": student
+            }
+        }, status=status.HTTP_200_OK)
 
 
 # --------------------------------------------------Admin details view--------------------------------------s

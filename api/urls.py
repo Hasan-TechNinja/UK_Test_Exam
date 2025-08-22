@@ -88,5 +88,7 @@ urlpatterns = [
     # question upload
     path("upload-questions/", views.UploadCSVAPIView.as_view(), name="upload-questions"),
 
+    path('student/', views.StudentView.as_view(), name='student')
+
 ]
     
