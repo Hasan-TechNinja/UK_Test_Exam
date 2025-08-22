@@ -1,0 +1,33 @@
+{% extends "admin/change_list.html" %}
+
+{% block object-tools %}
+{{ block.super }}
+<li class="upload-csv">
+    <a href="{% url 'admin:question_upload_csv' %}" class="addlink" style="
+        display: inline-flex;
+        align-items: center;
+        background-color: #4F46E5; /* Indigo */
+        color: white;
+        padding: 6px 12px;
+        border-radius: 6px;
+        font-weight: 500;
+        text-decoration: none;
+        transition: background-color 0.2s;
+    " onmouseover="this.style.backgroundColor='#4338CA'" onmouseout="this.style.backgroundColor='#4F46E5'">
+        <!-- Upload Icon SVG -->
+        <svg xmlns="http://www.w3.org/2000/svg" style="height: 16px; width: 16px; margin-right: 6px;" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v4a2 2 0 002 2h12a2 2 0 002-2v-4M12 12V4m0 0l-4 4m4-4l4 4"/>
+        </svg>
+        Upload CSV
+    </a>
+</li>
+
+<style>
+.upload-csv a {
+    box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+}
+.upload-csv a:hover {
+    text-decoration: none;
+}
+</style>
+{% endblock %}
