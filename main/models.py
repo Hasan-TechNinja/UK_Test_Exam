@@ -6,6 +6,7 @@ import uuid
 from django.contrib.auth import get_user_model
 from django.utils import timezone
 from datetime import timedelta
+import json
 
 # Create your models here.
 
@@ -98,7 +99,7 @@ class LessonContent(models.Model):
     lesson = models.ForeignKey(Lesson, on_delete=models.CASCADE)
     image = models.ImageField(upload_to="lesson")
     description = models.TextField()
-    glossary = models.TextField(max_length=200, default="")
+    glossary = models.TextField(default=list)
     video = models.URLField(blank=True, null=True)
 
     def __str__(self):
@@ -149,25 +150,52 @@ class GuidesSupport(models.Model):
     def __str__(self):
         return self.title
     
+
 class GuideSupportContent(models.Model):
     guide = models.ForeignKey(GuidesSupport, on_delete=models.CASCADE)
     image = models.ImageField(upload_to="GuidesAndSupport", blank=True, null=True)
     description = models.TextField(default=" ")
-    glossary = models.TextField(max_length=200, default="", blank=True)  # NEW
+    glossary = models.TextField(default=list, blank=True)
     video = models.URLField(blank=True)
     created = models.DateTimeField(auto_now=True)
 
     def __str__(self):
         return self.guide.name
 
-    # Utility method to handle glossary as a list
     def get_glossary_string_list(self, delimiter=','):
-        if self.glossary:
-            return [item.strip() for item in self.glossary.split(delimiter) if item.strip()]
-        return []
+        """
+        Return glossary as a list. Handles:
+          - JSON-encoded strings like '["as","second"]'
+          - Plain comma-separated strings like 'as, second'
+        """
+        raw = (self.glossary or "").strip()
+        if not raw:
+            return []
+        # Try JSON first
+        try:
+            parsed = json.loads(raw)
+            if isinstance(parsed, list):
+                return [str(x).strip() for x in parsed if str(x).strip()]
+        except json.JSONDecodeError:
+            pass
+        # Fallback: CSV-style
+        return [item.strip() for item in raw.split(delimiter) if item.strip()]
 
     def set_glossary_string_list(self, data_list, delimiter=','):
-        self.glossary = delimiter.join(data_list)
+        """
+        Accept a list (or a JSON string) and store consistently as comma-separated,
+        OR switch to JSONField later (recommended).
+        """
+        # If caller accidentally passes a JSON string, normalize it
+        if isinstance(data_list, str):
+            try:
+                maybe_list = json.loads(data_list)
+                if isinstance(maybe_list, list):
+                    data_list = maybe_list
+            except json.JSONDecodeError:
+                # Treat the string as CSV
+                data_list = [x.strip() for x in data_list.split(delimiter)]
+        self.glossary = delimiter.join([str(x).strip() for x in data_list if str(x).strip()])
 
 
 

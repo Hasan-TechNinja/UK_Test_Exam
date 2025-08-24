@@ -9,6 +9,7 @@ from rest_framework.validators import UniqueValidator
 from main.models import EmailVerification
 from django.core.mail import send_mail
 import random
+import json
 
 
 
@@ -137,6 +138,19 @@ class HomePageModelSerializer(serializers.ModelSerializer):
 
 
 
+'''class LessonContentModelSerializer(serializers.ModelSerializer):
+    chapter_name = serializers.CharField(source='lesson.chapter.name', read_only=True)
+    glossary_list = serializers.SerializerMethodField()
+
+    class Meta:
+        model = LessonContent
+        fields = ['id','chapter_name','lesson','image','description','video','glossary_list']
+
+    def get_glossary_list(self, obj):
+        return obj.get_glossary_string_list()'''
+
+
+
 class LessonContentModelSerializer(serializers.ModelSerializer):
     chapter_name = serializers.CharField(source='lesson.chapter.name', read_only=True)
     glossary_list = serializers.SerializerMethodField()
@@ -146,7 +160,14 @@ class LessonContentModelSerializer(serializers.ModelSerializer):
         fields = ['id','chapter_name','lesson','image','description','video','glossary_list']
 
     def get_glossary_list(self, obj):
-        return obj.get_glossary_string_list()
+        try:
+            # If glossary is JSON string like "[\"as\"]"
+            return json.loads(obj.glossary)
+        except Exception:
+            # Fallback for comma-separated string
+            return [item.strip() for item in obj.glossary.split(',') if item.strip()]
+
+
 
 
 
