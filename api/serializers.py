@@ -138,36 +138,46 @@ class HomePageModelSerializer(serializers.ModelSerializer):
 
 
 
-'''class LessonContentModelSerializer(serializers.ModelSerializer):
-    chapter_name = serializers.CharField(source='lesson.chapter.name', read_only=True)
-    glossary_list = serializers.SerializerMethodField()
-
-    class Meta:
-        model = LessonContent
-        fields = ['id','chapter_name','lesson','image','description','video','glossary_list']
-
-    def get_glossary_list(self, obj):
-        return obj.get_glossary_string_list()'''
-
-
-
 class LessonContentModelSerializer(serializers.ModelSerializer):
     chapter_name = serializers.CharField(source='lesson.chapter.name', read_only=True)
-    glossary_list = serializers.SerializerMethodField()
+    glossary = serializers.SerializerMethodField()
 
     class Meta:
         model = LessonContent
-        fields = ['id','chapter_name','lesson','image','description','video','glossary_list']
+        fields = ['id', 'chapter_name', 'lesson', 'image', 'description', 'video', 'glossary']
 
-    def get_glossary_list(self, obj):
+    def get_glossary(self, obj):
         try:
-            # If glossary is JSON string like "[\"as\"]"
-            return json.loads(obj.glossary)
+            data = json.loads(obj.glossary)
+            # Ensure it's in the right format: list of dicts
+            if isinstance(data, list) and all(isinstance(item, dict) for item in data):
+                return data
+            # fallback if it's a dict
+            if isinstance(data, dict):
+                return [data]
         except Exception:
-            # Fallback for comma-separated string
-            return [item.strip() for item in obj.glossary.split(',') if item.strip()]
+            # fallback for "title:desc,title2:desc2"
+            items = [item.strip() for item in obj.glossary.split(',') if item.strip()]
+            return [{f"title {i+1}": val} for i, val in enumerate(items)]
+        return []
+    
+class LessonContentModelSerializer(serializers.ModelSerializer):
+    chapter_name = serializers.CharField(source='lesson.chapter.name', read_only=True)
+
+    class Meta:
+        model = LessonContent
+        fields = ['id', 'chapter_name', 'lesson', 'image', 'description', 'video', 'glossary']
 
 
+'''
+class LessonContentModelSerializer(serializers.ModelSerializer):
+    chapter_name = serializers.CharField(source='lesson.chapter.name', read_only=True)
+
+    class Meta:
+        model = LessonContent
+        fields = ['id', 'chapter_name', 'lesson', 'image', 'description', 'video', 'glossary']
+
+'''
 
 
 

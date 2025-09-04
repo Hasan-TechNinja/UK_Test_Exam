@@ -99,25 +99,8 @@ class LessonContent(models.Model):
     lesson = models.ForeignKey(Lesson, on_delete=models.CASCADE)
     image = models.ImageField(upload_to="lesson")
     description = models.TextField()
-    glossary = models.TextField(default=list)
+    glossary = models.JSONField(default=list)  # ✅ cleaner
     video = models.URLField(blank=True, null=True)
-
-    def __str__(self):
-        return f"{self.lesson.chapter.name} - Lesson {self.lesson.name}"
-
-    def set_glossary_string_list(self, data_list, delimiter=','):
-        """
-        Set the glossary field by joining a list of strings into a single string.
-        """
-        self.glossary = delimiter.join([str(item).strip() for item in data_list if item])
-
-    def get_glossary_string_list(self, delimiter=','):
-        """
-        Return the glossary field as a list of strings.
-        """
-        if self.glossary:
-            return [item.strip() for item in self.glossary.split(delimiter) if item.strip()]
-        return []
 
 
 
