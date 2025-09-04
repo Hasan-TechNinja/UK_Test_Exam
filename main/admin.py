@@ -17,21 +17,39 @@ class HomePageModelAdmin(admin.ModelAdmin):
 admin.site.register(HomePage, HomePageModelAdmin)
 
 
-class ChapterModelAdmin(admin.ModelAdmin):
-    list_display = (
-        'id', 'name', 'description','created'
+# class ChapterModelAdmin(admin.ModelAdmin):
+#     list_display = (
+#         'id', 'name', 'description','created'
+#     )
+# admin.site.register(Chapter, ChapterModelAdmin)
+
+
+
+# class LessonModelAdmin(admin.ModelAdmin):
+#     list_display = (
+#         'id', 'name', 'title', 'chapter', 'created',
+#     )
+#     list_filter = ('chapter',)
+# admin.site.register(Lesson, LessonModelAdmin)
+
+class LessonContentInline(admin.StackedInline):  # better layout
+    model = LessonContent
+    extra = 1
+    fieldsets = (
+        (None, {
+            'fields': ('image', 'description', 'glossary', 'video')
+        }),
     )
-admin.site.register(Chapter, ChapterModelAdmin)
 
 
-
-class LessonModelAdmin(admin.ModelAdmin):
-    list_display = (
-        'id', 'name', 'title', 'chapter', 'created',
-    )
+class LessonAdmin(admin.ModelAdmin):
+    list_display = ('id', 'title', 'chapter')
     list_filter = ('chapter',)
-admin.site.register(Lesson, LessonModelAdmin)
+    inlines = [LessonContentInline]
 
+
+admin.site.register(Chapter)   # if not already
+admin.site.register(Lesson, LessonAdmin)
 
 
 class LessonProgressAdmin(admin.ModelAdmin):
