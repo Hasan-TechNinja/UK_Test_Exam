@@ -178,12 +178,42 @@ class QuestionOptionSerializer(serializers.ModelSerializer):
 
 class QuestionSerializer(serializers.ModelSerializer):
     options = QuestionOptionSerializer(many=True, read_only=True)
+    correct_option_ids = serializers.SerializerMethodField()
+    correct_option_texts = serializers.SerializerMethodField()
     class Meta:
         model  = Question
-        fields = ['id', 'question_text', 'image', 'multiple_answers', 'options']
+        fields = ['id', 'question_text', 'image', 'multiple_answers', 'options', "correct_option_ids", "correct_option_texts",]
+
+    def get_correct_option_ids(self, obj):
+        # uses prefetch below so it won't re-hit DB
+        return [opt.id for opt in obj.options.all() if opt.is_correct]
+
+    def get_correct_option_texts(self, obj):
+        return [opt.text for opt in obj.options.all() if opt.is_correct]
 
 
+class QuestionForTestSerializer(serializers.ModelSerializer):
+    options = QuestionOptionSerializer(many=True, read_only=True)
+    correct_option_ids = serializers.SerializerMethodField()
+    correct_option_texts = serializers.SerializerMethodField()
 
+    class Meta:
+        model  = Question
+        fields = [
+            "id",
+            "question_text",
+            "image",
+            "multiple_answers",
+            "options",
+            "correct_option_ids",
+            "correct_option_texts",
+        ]
+
+    def get_correct_option_ids(self, obj):
+        return [opt.id for opt in obj.options.all() if opt.is_correct]
+
+    def get_correct_option_texts(self, obj):
+        return [opt.text for opt in obj.options.all() if opt.is_correct]
 
 
 class UserSerializer(serializers.ModelSerializer):

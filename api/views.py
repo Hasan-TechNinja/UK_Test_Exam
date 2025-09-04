@@ -10,7 +10,7 @@ from django.core.exceptions import ValidationError as DjangoValidationError
 
 from main.models import Lesson, Chapter, Profile, GuidesSupport, HomePage, GuideSupportContent, LessonContent, UserEvaluation, Question, QuestionOption, MockTestSession, MockTestAnswer, FreeMockTestSession, FreeMockTestAnswer, ChapterProgress, LessonProgress
 from subscriptions.models import SubscriptionPlan, UserSubscription
-from . serializers import LessonModelSerializers, ChapterModelSerializer, RegisterSerializer, ProfileModelSerializer, GuidesSupportModelSerializer, HomePageModelSerializer, GuideSupportContentModelSerializer, LessonContentModelSerializer, UserEvaluationModelSerializer, SubscriptionPlanSerializer, UserSubscriptionSerializer, QuestionOptionSerializer, QuestionSerializer, StartMockTestSerializer, MockTestAnswerSerializer, MockTestResultSerializer, FreeMockTestAnswerSerializer, FreeMockTestResultSerializer, FreeStartMockTestSerializer
+from . serializers import LessonModelSerializers, ChapterModelSerializer, QuestionForTestSerializer, RegisterSerializer, ProfileModelSerializer, GuidesSupportModelSerializer, HomePageModelSerializer, GuideSupportContentModelSerializer, LessonContentModelSerializer, UserEvaluationModelSerializer, SubscriptionPlanSerializer, UserSubscriptionSerializer, QuestionOptionSerializer, QuestionSerializer, StartMockTestSerializer, MockTestAnswerSerializer, MockTestResultSerializer, FreeMockTestAnswerSerializer, FreeMockTestResultSerializer, FreeStartMockTestSerializer
 
 from rest_framework.views import View, APIView
 from rest_framework import mixins, generics, status, viewsets, permissions
@@ -26,6 +26,7 @@ from django.contrib.auth import get_user_model
 from main.models import EmailVerification, PasswordResetCode
 from django.core.mail import send_mail
 from django.contrib.auth.password_validation import validate_password
+from django.db.models import Prefetch
 
 #  Create your views here.
 
@@ -1566,21 +1567,29 @@ class PracticeQuestionStepView(APIView):
         })
 '''
 
+
 class PracticeQuestionListView(APIView):
     """
     GET /practice/chapters/<chapter_id>/questions/
-    Returns all practice questions in a chapter with options
+    Returns all practice questions in a chapter with options + correct answers
     """
     permission_classes = [IsAuthenticated]
 
     def get(self, request, chapter_id):
-        questions = Question.objects.filter(type="practice", chapter_id=chapter_id).order_by("id")
+        questions = (
+            Question.objects
+            .filter(type="practice", chapter_id=chapter_id)
+            .order_by("id")
+            .prefetch_related(
+                Prefetch("options", queryset=QuestionOption.objects.order_by("id"))
+            )
+        )
         serialized = QuestionSerializer(questions, many=True).data
         return Response({
             "success": True,
             "message": "Practice questions retrieved successfully.",
             "data": {
-                "total": questions.count(),
+                "total": len(serialized),
                 "questions": serialized
             }
         }, status=status.HTTP_200_OK)
@@ -1879,8 +1888,15 @@ class MockTestViewSet(viewsets.ViewSet):
     @action(detail=False, methods=['post'])
     def start(self, request):
         total_questions = 24
-        questions = list(Question.objects.filter(type="mockTest"))
 
+        # load all needed options once
+        qs = (
+            Question.objects
+            .filter(type="mockTest")
+            .prefetch_related(Prefetch("options", queryset=QuestionOption.objects.order_by("id")))
+        )
+
+        questions = list(qs)
         if len(questions) < total_questions:
             return Response({
                 "success": False,
@@ -1891,16 +1907,13 @@ class MockTestViewSet(viewsets.ViewSet):
         selected_questions = random.sample(questions, total_questions)
         session = MockTestSession.objects.create(user=request.user, total_questions=total_questions)
 
-        answer_map = []
-        for q in selected_questions:
-            MockTestAnswer.objects.create(session=session, question=q)
-            answer_map.append({
-                "question_id": q.id,
-                "question_text": q.question_text,  # fixed field name
-                "image": q.image.url if q.image else None,
-                "multiple_answers": q.multiple_answers,
-                "options": list(q.options.values('id', 'text')),
-            })
+        # create empty answer rows up front
+        MockTestAnswer.objects.bulk_create([
+            MockTestAnswer(session=session, question=q) for q in selected_questions
+        ])
+
+        # serialize questions WITH correct answers
+        serialized = QuestionForTestSerializer(selected_questions, many=True).data
 
         # Update UserEvaluation
         profile = request.user.profile
@@ -1913,7 +1926,7 @@ class MockTestViewSet(viewsets.ViewSet):
             "message": "Mock test session started successfully.",
             "data": {
                 "session_id": session.id,
-                "questions": answer_map
+                "questions": serialized
             }
         }, status=status.HTTP_200_OK)
 
@@ -2080,10 +2093,40 @@ class MockTestViewSet(viewsets.ViewSet):
 class FreeMockTestViewSet(viewsets.ViewSet):
     permission_classes = [IsAuthenticated]
 
+    # @action(detail=False, methods=['post'])
+    # def start(self, request):
+    #     total_questions = 24
+    #     questions = list(Question.objects.filter(type="freeMockTest"))
+    #     if len(questions) < total_questions:
+    #         return Response({
+    #             "success": False,
+    #             "message": "Not enough questions to start the test.",
+    #             "data": None
+    #         }, status=status.HTTP_400_BAD_REQUEST)
+
+    #     selected_questions = random.sample(questions, total_questions)
+    #     session = FreeMockTestSession.objects.create(user=request.user, total_questions=total_questions)
+
+    #     for q in selected_questions:
+    #         FreeMockTestAnswer.objects.create(session=session, question=q)
+
+    #     return Response({
+    #         "success": True,
+    #         "message": "Free mock test session started successfully.",
+    #         "data": FreeStartMockTestSerializer(session).data
+    #     })
+
     @action(detail=False, methods=['post'])
     def start(self, request):
         total_questions = 24
-        questions = list(Question.objects.filter(type="freeMockTest"))
+
+        qs = (
+            Question.objects
+            .filter(type="freeMockTest")
+            .prefetch_related(Prefetch("options", queryset=QuestionOption.objects.order_by("id")))
+        )
+        questions = list(qs)
+
         if len(questions) < total_questions:
             return Response({
                 "success": False,
@@ -2094,42 +2137,80 @@ class FreeMockTestViewSet(viewsets.ViewSet):
         selected_questions = random.sample(questions, total_questions)
         session = FreeMockTestSession.objects.create(user=request.user, total_questions=total_questions)
 
-        for q in selected_questions:
-            FreeMockTestAnswer.objects.create(session=session, question=q)
+        # create answer rows
+        FreeMockTestAnswer.objects.bulk_create([
+            FreeMockTestAnswer(session=session, question=q) for q in selected_questions
+        ])
+
+        # serialize questions WITH correct answers (and pass request to render absolute image URLs)
+        serialized_questions = QuestionForTestSerializer(
+            selected_questions, many=True, context={"request": request}
+        ).data
 
         return Response({
             "success": True,
             "message": "Free mock test session started successfully.",
-            "data": FreeStartMockTestSerializer(session).data
-        })
+            "data": {
+                "session_id": session.id,
+                "total_questions": total_questions,
+                "duration_minutes": session.duration_minutes,
+                "started_at": session.started_at,
+                "questions": serialized_questions
+            }
+        }, status=status.HTTP_200_OK)
+
+    # def retrieve(self, request, pk=None):
+    #     session = get_object_or_404(FreeMockTestSession, pk=pk, user=request.user)
+    #     answers = session.answers.select_related('question').prefetch_related('question__options')
+
+    #     questions_data = []
+    #     for answer in answers:
+    #         question = answer.question
+    #         options = question.options.all()
+    #         questions_data.append({
+    #             'question_id': question.id,
+    #             'question_text': question.question_text,
+    #             'image': question.image.url if question.image else None,
+    #             'multiple_answers': question.multiple_answers,
+    #             'options': [
+    #                 {'id': opt.id, 'text': opt.text}
+    #                 for opt in options
+    #             ]
+    #         })
+
+    #     return Response({
+    #         "success": True,
+    #         "message": "Free mock test session retrieved successfully.",
+    #         "data": {
+    #             'session_id': session.id,
+    #             'questions': questions_data
+    #         }
+    #     })
+
 
     def retrieve(self, request, pk=None):
         session = get_object_or_404(FreeMockTestSession, pk=pk, user=request.user)
-        answers = session.answers.select_related('question').prefetch_related('question__options')
 
-        questions_data = []
-        for answer in answers:
-            question = answer.question
-            options = question.options.all()
-            questions_data.append({
-                'question_id': question.id,
-                'question_text': question.question_text,
-                'image': question.image.url if question.image else None,
-                'multiple_answers': question.multiple_answers,
-                'options': [
-                    {'id': opt.id, 'text': opt.text}
-                    for opt in options
-                ]
-            })
+        # load questions + options in one go
+        answers = (
+            session.answers
+            .select_related('question')
+            .prefetch_related(Prefetch('question__options', queryset=QuestionOption.objects.order_by("id")))
+        )
+
+        questions = [a.question for a in answers]
+        questions_data = QuestionForTestSerializer(questions, many=True, context={"request": request}).data
 
         return Response({
             "success": True,
             "message": "Free mock test session retrieved successfully.",
             "data": {
-                'session_id': session.id,
-                'questions': questions_data
+                "session_id": session.id,
+                "questions": questions_data
             }
-        })
+        }, status=status.HTTP_200_OK)
+    
+    
 
     @action(detail=True, methods=['post'])
     def answer(self, request, pk=None):
