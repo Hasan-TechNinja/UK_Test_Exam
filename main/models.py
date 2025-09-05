@@ -99,8 +99,23 @@ class LessonContent(models.Model):
     lesson = models.ForeignKey(Lesson, on_delete=models.CASCADE)
     image = models.ImageField(upload_to="lesson")
     description = models.TextField()
-    glossary = models.JSONField(default=list)  # ✅ cleaner
+    # glossary = models.JSONField(default=list)  # ✅ cleaner
     video = models.URLField(blank=True, null=True)
+
+    def __str__(self):
+        return f"{self.lesson.title} - Content"
+    
+
+class Glossary(models.Model):
+    lesson_content = models.ForeignKey(LessonContent, on_delete=models.CASCADE, related_name="glossaries")
+    title = models.CharField(max_length=200)
+    description = models.CharField(max_length=500)
+
+    class Meta:
+        verbose_name_plural = "Glossaries"
+
+    def __str__(self):
+        return f"{self.title} ({self.lesson_content.lesson.chapter.name} → {self.lesson_content.lesson.title})"
 
 
 

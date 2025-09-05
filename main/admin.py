@@ -1,5 +1,5 @@
 from django.contrib import admin, messages
-from . models import Chapter, Lesson, Profile, GuidesSupport, GuideSupportContent, LessonContent, HomePage, QuestionOption, Question, UserEvaluation, MockTestAnswer, MockTestSession, FreeMockTestSession, FreeMockTestAnswer, ChapterProgress, LessonProgress
+from . models import Chapter, Glossary, Lesson, Profile, GuidesSupport, GuideSupportContent, LessonContent, HomePage, QuestionOption, Question, UserEvaluation, MockTestAnswer, MockTestSession, FreeMockTestSession, FreeMockTestAnswer, ChapterProgress, LessonProgress
 from rest_framework.authtoken.models import Token
 import csv
 from io import TextIOWrapper
@@ -17,29 +17,21 @@ class HomePageModelAdmin(admin.ModelAdmin):
 admin.site.register(HomePage, HomePageModelAdmin)
 
 
-# class ChapterModelAdmin(admin.ModelAdmin):
-#     list_display = (
-#         'id', 'name', 'description','created'
-#     )
-# admin.site.register(Chapter, ChapterModelAdmin)
+class GlossaryInline(admin.TabularInline):
+    model = Glossary
+    extra = 3
 
 
-
-# class LessonModelAdmin(admin.ModelAdmin):
-#     list_display = (
-#         'id', 'name', 'title', 'chapter', 'created',
-#     )
-#     list_filter = ('chapter',)
-# admin.site.register(Lesson, LessonModelAdmin)
-
-class LessonContentInline(admin.StackedInline):  # better layout
+class LessonContentInline(admin.StackedInline):
     model = LessonContent
     extra = 1
     fieldsets = (
         (None, {
-            'fields': ('image', 'description', 'glossary', 'video')
+            'fields': ('image', 'description', 'video')
         }),
     )
+    inlines = [GlossaryInline]  # Attach glossary inline inside LessonContent
+
 
 
 class LessonAdmin(admin.ModelAdmin):
@@ -47,9 +39,6 @@ class LessonAdmin(admin.ModelAdmin):
     list_filter = ('chapter',)
     inlines = [LessonContentInline]
 
-
-admin.site.register(Chapter)   # if not already
-admin.site.register(Lesson, LessonAdmin)
 
 
 class LessonProgressAdmin(admin.ModelAdmin):
@@ -59,11 +48,33 @@ class LessonProgressAdmin(admin.ModelAdmin):
 admin.site.register(LessonProgress, LessonProgressAdmin)
 
 
-class LessonContentModelAdmin(admin.ModelAdmin):
-    list_display = ('id', 'lesson', 'image', 'description', 'glossary', 'video')
-    list_select_related = ('lesson', 'lesson__chapter')
-    list_filter = ('lesson', 'lesson__chapter')
-admin.site.register(LessonContent, LessonContentModelAdmin)
+class LessonContentAdmin(admin.ModelAdmin):
+    list_display = ('id', 'lesson', 'image', 'description', 'video')
+    list_filter = ('lesson__chapter', 'lesson')
+    search_fields = ('lesson__title', 'description')
+    inlines = [GlossaryInline]
+
+
+class GlossaryAdmin(admin.ModelAdmin):
+    list_display = ('id', 'title', 'lesson_content', 'get_lesson', 'get_chapter')
+    list_filter = ('lesson_content__lesson__chapter', 'lesson_content__lesson')
+    search_fields = ('title', 'description')
+
+    def get_chapter(self, obj):
+        return obj.lesson_content.lesson.chapter.name
+    get_chapter.short_description = "Chapter"
+
+    def get_lesson(self, obj):
+        return obj.lesson_content.lesson.title
+    get_lesson.short_description = "Lesson"
+
+
+
+admin.site.register(Chapter)
+admin.site.register(Lesson, LessonAdmin)
+admin.site.register(LessonContent, LessonContentAdmin)
+admin.site.register(Glossary, GlossaryAdmin)
+
 
 
 class ProfileModelAdmin(admin.ModelAdmin):
