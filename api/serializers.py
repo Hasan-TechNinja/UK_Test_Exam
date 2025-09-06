@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from main.models import Chapter, Lesson, Profile, GuidesSupport, UserEvaluation, HomePage, LessonContent, GuideSupportContent, QuestionOption, Question, MockTestSession, MockTestAnswer, FreeMockTestSession, FreeMockTestAnswer
+from main.models import Chapter, Glossary, Lesson, Profile, GuidesSupport, UserEvaluation, HomePage, LessonContent, GuideSupportContent, QuestionOption, Question, MockTestSession, MockTestAnswer, FreeMockTestSession, FreeMockTestAnswer
 from subscriptions.models import SubscriptionPlan, UserSubscription
 from django.contrib.auth.models import User
 from django.contrib.auth import get_user_model
@@ -10,43 +10,44 @@ from main.models import EmailVerification
 from django.core.mail import send_mail
 import random
 import json
+from django.utils.text import slugify
+
 
 
 
 class ChapterModelSerializer(serializers.ModelSerializer):
     lessons = serializers.SerializerMethodField()
+
     class Meta:
         model = Chapter
-        # fields = "__all__"
-        # exclude = ['created']
         fields = ['id', 'name', 'description', 'lessons']
-
-    # user = serializers.HiddenField(default=serializers.CurrentUserDefault())
-
-    def get_title(self, obj):
-        return f"Chapter {obj.id}"
 
     def get_lessons(self, obj):
         lesson_qs = obj.lesson_set.all().order_by('id')
         return [f"{i+1}" for i, _ in enumerate(lesson_qs)]
 
-    def create(self, validated_data):
-        return super().create(validated_data)
-    
 
 class LessonModelSerializers(serializers.ModelSerializer):
-    # user = serializers.HiddenField(default=serializers.CurrentUserDefault())
     class Meta:
         model = Lesson
         exclude = ['created']
 
-    def create(self, validated_data):
-    
-        return super().create(validated_data)
+
+class GlossaryModelSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Glossary
+        fields = ['id', 'title', 'description']
 
 
+class LessonContentModelSerializer(serializers.ModelSerializer):
+    chapter_name = serializers.CharField(source='lesson.chapter.name', read_only=True)
+    glossaries = GlossaryModelSerializer(many=True, read_only=True)
 
-from django.utils.text import slugify
+    class Meta:
+        model = LessonContent
+        fields = ['id', 'chapter_name', 'lesson', 'image', 'description', 'video', 'glossaries']
+
+
 
 class RegisterSerializer(serializers.ModelSerializer):
     email = serializers.EmailField(
@@ -138,35 +139,13 @@ class HomePageModelSerializer(serializers.ModelSerializer):
 
 
 
-class LessonContentModelSerializer(serializers.ModelSerializer):
-    chapter_name = serializers.CharField(source='lesson.chapter.name', read_only=True)
-    glossary = serializers.SerializerMethodField()
-
-    class Meta:
-        model = LessonContent
-        fields = ['id', 'chapter_name', 'lesson', 'image', 'description', 'video', 'glossary']
-
-    def get_glossary(self, obj):
-        try:
-            data = json.loads(obj.glossary)
-            # Ensure it's in the right format: list of dicts
-            if isinstance(data, list) and all(isinstance(item, dict) for item in data):
-                return data
-            # fallback if it's a dict
-            if isinstance(data, dict):
-                return [data]
-        except Exception:
-            # fallback for "title:desc,title2:desc2"
-            items = [item.strip() for item in obj.glossary.split(',') if item.strip()]
-            return [{f"title {i+1}": val} for i, val in enumerate(items)]
-        return []
     
-class LessonContentModelSerializer(serializers.ModelSerializer):
-    chapter_name = serializers.CharField(source='lesson.chapter.name', read_only=True)
+# class LessonContentModelSerializer(serializers.ModelSerializer):
+#     chapter_name = serializers.CharField(source='lesson.chapter.name', read_only=True)
 
-    class Meta:
-        model = LessonContent
-        fields = ['id', 'chapter_name', 'lesson', 'image', 'description', 'video', 'glossary']
+#     class Meta:
+#         model = LessonContent
+#         fields = ['id', 'chapter_name', 'lesson', 'image', 'description', 'video', 'glossary']
 
 
 '''

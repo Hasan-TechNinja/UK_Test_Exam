@@ -1197,6 +1197,8 @@ class ChapterLessonsView(APIView):
         }, status=status.HTTP_200_OK)
 
 
+
+
 class ChapterLessonDetailView(APIView):
     permission_classes = [AllowAny]
 
@@ -1230,7 +1232,6 @@ class ChapterLessonDetailView(APIView):
 
         completion_percentage = None  # Default for anonymous users
 
-        # Update progress only if user is authenticated
         if request.user.is_authenticated:
             user = request.user
             progress_obj, _ = LessonProgress.objects.get_or_create(user=user, lesson=lesson)

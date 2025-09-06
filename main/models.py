@@ -115,7 +115,8 @@ class Glossary(models.Model):
         verbose_name_plural = "Glossaries"
 
     def __str__(self):
-        return f"{self.title} ({self.lesson_content.lesson.chapter.name} → {self.lesson_content.lesson.title})"
+        # return f"{self.title} ({self.lesson_content.lesson.chapter.name} → {self.lesson_content.lesson.title})"
+        return self.title
 
 
 
