@@ -106,23 +106,6 @@ class GuideSupportContentModelAdmin(admin.ModelAdmin):
 admin.site.register(GuideSupportContent, GuideSupportContentModelAdmin)
 
 
-'''
-class QuestionOptionAdmin(admin.ModelAdmin):
-    list_display = ('id', 'question', 'text', 'is_correct')
-    list_filter = ('question', 'is_correct')
-    search_fields = ('question__question_text', 'text')
-admin.site.register(QuestionOption, QuestionOptionAdmin)
-
-
-
-class QuestionAdmin(admin.ModelAdmin):
-    list_display = (
-        'id', 'chapter', 'type', 'question_text', 'explanation', 'image', 'multiple_answers'
-    )
-    list_filter = ['type']
-admin.site.register(Question, QuestionAdmin)'''
-
-
 
 class MockTestSessionAdmin(admin.ModelAdmin):
     list_display = (
