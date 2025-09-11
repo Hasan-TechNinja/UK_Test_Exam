@@ -94,5 +94,7 @@ urlpatterns = [
     path('mock-tests/count/', views.MockTestCount.as_view(), name='mock-test-count'),
     path('subscription/count/', views.UserSubscriptionCount.as_view(), name='subscription-count'),
 
+    path('upload-study-csv/', views.ImportLessonContentCSVView.as_view(), name='upload_csv'),
+
 ]
     

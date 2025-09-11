@@ -308,3 +308,7 @@ class FreeMockTestResultSerializer(serializers.ModelSerializer):
 
     def get_wrong(self, obj):
         return obj.answers.filter(is_correct=False).count()
+
+
+class CSVUploadSerializer(serializers.Serializer):
+    csv_file = serializers.FileField()

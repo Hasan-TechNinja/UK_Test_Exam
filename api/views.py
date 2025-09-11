@@ -8,7 +8,7 @@ from django.db.models import Max
 from django.contrib.auth.models import AnonymousUser
 from django.core.exceptions import ValidationError as DjangoValidationError
 
-from main.models import Lesson, Chapter, Profile, GuidesSupport, HomePage, GuideSupportContent, LessonContent, UserEvaluation, Question, QuestionOption, MockTestSession, MockTestAnswer, FreeMockTestSession, FreeMockTestAnswer, ChapterProgress, LessonProgress
+from main.models import Lesson, Chapter, Profile, GuidesSupport, HomePage, GuideSupportContent, LessonContent, UserEvaluation, Question, QuestionOption, MockTestSession, MockTestAnswer, FreeMockTestSession, FreeMockTestAnswer, ChapterProgress, LessonProgress, Glossary
 from subscriptions.models import SubscriptionPlan, UserSubscription
 from . serializers import LessonModelSerializers, ChapterModelSerializer, QuestionForTestSerializer, RegisterSerializer, ProfileModelSerializer, GuidesSupportModelSerializer, HomePageModelSerializer, GuideSupportContentModelSerializer, LessonContentModelSerializer, UserEvaluationModelSerializer, SubscriptionPlanSerializer, UserSubscriptionSerializer, QuestionOptionSerializer, QuestionSerializer, StartMockTestSerializer, MockTestAnswerSerializer, MockTestResultSerializer, FreeMockTestAnswerSerializer, FreeMockTestResultSerializer, FreeStartMockTestSerializer
 
@@ -27,6 +27,7 @@ from main.models import EmailVerification, PasswordResetCode
 from django.core.mail import send_mail
 from django.contrib.auth.password_validation import validate_password
 from django.db.models import Prefetch
+from collections import defaultdict
 
 #  Create your views here.
 
@@ -2245,3 +2246,222 @@ class UploadCSVAPIView(APIView):
                 "message": str(e),
                 "data": None
             }, status=status.HTTP_400_BAD_REQUEST)
+        
+
+
+class ImportLessonContentCSVView(APIView):
+    """
+    POST multipart/form-data:
+      - file: CSV file with headers like:
+        chapter_name,lesson_title,image,description,video,
+        glossary_title,glossary_description,glossary_title,glossary_description,...
+
+    Notes:
+    - Supports comma or tab-separated files.
+    - Any number of (glossary_title, glossary_description) pairs is allowed.
+    - A single LessonContent is created per unique (chapter_name, lesson_title, image, description, video).
+    """
+    permission_classes = [permissions.IsAdminUser]
+
+    REQUIRED_BASE_FIELDS = ["chapter_name", "lesson_title", "image", "description", "video"]
+    GLOSSARY_TITLE = "glossary_title"
+    GLOSSARY_DESC = "glossary_description"
+
+    def post(self, request):
+        upload = request.FILES.get("file")
+        if not upload:
+            return Response({"detail": "Please attach a CSV file in the 'file' field."},
+                            status=status.HTTP_400_BAD_REQUEST)
+
+        # Decode with BOM handling
+        file_obj = TextIOWrapper(upload.file, encoding="utf-8-sig", newline="")
+
+        # Try to sniff delimiter; fallback to comma, then tab if header looks tabbed
+        sample = file_obj.read(4096)
+        file_obj.seek(0)
+        try:
+            dialect = csv.Sniffer().sniff(sample, delimiters=[",", "\t", ";", "|"])
+            delimiter = dialect.delimiter
+        except csv.Error:
+            delimiter = "\t" if "\t" in sample.splitlines()[0] else ","
+
+        reader = csv.reader(file_obj, delimiter=delimiter)
+        try:
+            header = next(reader)
+        except StopIteration:
+            return Response({"detail": "CSV is empty."}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Normalize headers (strip spaces and lowercase)
+        norm_header = [h.strip().lower() for h in header]
+
+        # Validate base fields exist
+        missing = [f for f in self.REQUIRED_BASE_FIELDS if f not in norm_header]
+        if missing:
+            return Response(
+                {"detail": f"Missing required columns: {', '.join(missing)}"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        # Index map for base fields
+        idx = {name: norm_header.index(name) for name in self.REQUIRED_BASE_FIELDS}
+
+        # Gather all glossary column index pairs, in order of appearance
+        g_title_idxs = [i for i, h in enumerate(norm_header) if h == self.GLOSSARY_TITLE]
+        g_desc_idxs  = [i for i, h in enumerate(norm_header) if h == self.GLOSSARY_DESC]
+
+        # Pair them by position (left to right) — ignore unpaired leftovers
+        glossary_pairs = []
+        for t_i, d_i in zip(g_title_idxs, g_desc_idxs):
+            glossary_pairs.append((t_i, d_i))
+
+        if not glossary_pairs:
+            # Still allow import with no glossaries (edge case)
+            pass
+
+        # We will group rows into unique LessonContent keys
+        # key = (chapter_name, lesson_title, image, description, video)
+        contents_map = {}  # key -> LessonContent instance (created lazily)
+        pending_glossaries = defaultdict(list)  # key -> list[(title, desc)]
+
+        created_counts = {"chapters": 0, "lessons": 0, "lesson_contents": 0, "glossaries": 0}
+        errors = []
+
+        @transaction.atomic
+        def process_rows():
+            nonlocal created_counts
+
+            # Cache for get_or_create to reduce queries
+            chapter_cache = {}
+            lesson_cache = {}
+
+            for row_num, row in enumerate(reader, start=2):  # row numbering including header
+                # Pad short rows
+                if len(row) < len(norm_header):
+                    row = row + [""] * (len(norm_header) - len(row))
+
+                # Extract base fields
+                chapter_name = (row[idx["chapter_name"]]).strip()
+                lesson_title = (row[idx["lesson_title"]]).strip()
+                image        = (row[idx["image"]]).strip()
+                description  = (row[idx["description"]]).strip()
+                video        = (row[idx["video"]]).strip()
+
+                # Basic validation
+                if not chapter_name or not lesson_title:
+                    errors.append({"row": row_num, "error": "chapter_name and lesson_title are required"})
+                    continue
+                if not image:
+                    # You can relax this if you allow empty images.
+                    errors.append({"row": row_num, "error": "image is required"})
+                    continue
+                if not description:
+                    errors.append({"row": row_num, "error": "description is required"})
+                    continue
+
+                # Normalize image path for ImageField (assign name directly)
+                # If you want to force it under "lesson/", uncomment next block.
+                # if "/" not in image:
+                #     image = f"lesson/{image}"
+
+                # Collect glossary pairs from this row
+                glosses = []
+                for (ti, di) in glossary_pairs:
+                    g_title = row[ti].strip() if ti < len(row) else ""
+                    g_desc  = row[di].strip() if di < len(row) else ""
+                    if g_title or g_desc:
+                        # require title; description may be empty if you prefer
+                        if not g_title:
+                            continue
+                        glosses.append((g_title, g_desc))
+
+                # Create/get Chapter
+                chap_key = chapter_name.lower()
+                if chap_key in chapter_cache:
+                    chapter = chapter_cache[chap_key]
+                else:
+                    chapter, was_created = Chapter.objects.get_or_create(name=chapter_name)
+                    if was_created:
+                        created_counts["chapters"] += 1
+                    chapter_cache[chap_key] = chapter
+
+                # Create/get Lesson (by chapter + title). Also fill `name` if empty.
+                lesson_key = f"{chap_key}::{lesson_title.lower()}"
+                if lesson_key in lesson_cache:
+                    lesson = lesson_cache[lesson_key]
+                else:
+                    lesson, was_created = Lesson.objects.get_or_create(
+                        chapter=chapter,
+                        title=lesson_title,
+                        defaults={"name": lesson_title},  # keep your model consistent
+                    )
+                    if was_created:
+                        created_counts["lessons"] += 1
+                    # If an existing lesson has empty name, optionally backfill
+                    if not lesson.name:
+                        lesson.name = lesson_title
+                        lesson.save(update_fields=["name"])
+                    lesson_cache[lesson_key] = lesson
+
+                # Group lesson content by unique key
+                content_key = (chapter_name, lesson_title, image, description, video)
+
+                # Create LessonContent lazily (once per unique key)
+                if content_key not in contents_map:
+                    try:
+                        lc = LessonContent.objects.create(
+                            lesson=lesson,
+                            image=image,          # ImageField accepts name string
+                            description=description,
+                            video=video or None,
+                        )
+                        contents_map[content_key] = lc
+                        created_counts["lesson_contents"] += 1
+                    except Exception as e:
+                        errors.append({"row": row_num, "error": f"LessonContent create failed: {e}"})
+                        continue
+
+                # Queue glossaries for this content
+                if glosses:
+                    pending_glossaries[content_key].extend(glosses)
+
+            # Bulk create glossaries
+            to_create = []
+            for key, items in pending_glossaries.items():
+                lc = contents_map.get(key)
+                if not lc:
+                    continue
+                for (gt, gd) in items:
+                    to_create.append(Glossary(
+                        lesson_content=lc,
+                        title=gt,
+                        description=gd,
+                    ))
+            if to_create:
+                Glossary.objects.bulk_create(to_create, ignore_conflicts=False)
+                created_counts["glossaries"] += len(to_create)
+
+        # Run import inside a transaction
+        try:
+            process_rows()
+        except Exception as e:
+            return Response(
+                {"detail": "Import failed", "error": str(e)},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        return Response(
+    {
+        "success": True,
+        "message": "Lesson content imported successfully.",
+        "data": {
+            "chapters_created": created_counts["chapters"],
+            "lessons_created": created_counts["lessons"],
+            "lesson_contents_created": created_counts["lesson_contents"],
+            "glossaries_created": created_counts["glossaries"],
+            "unique_lesson_contents": len(contents_map),
+            "errors": errors,  # keep this if you want row-level error details
+        },
+    },
+    status=status.HTTP_201_CREATED,
+)
+
