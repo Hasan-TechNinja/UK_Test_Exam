@@ -1729,7 +1729,10 @@ class MockTestViewSet(viewsets.ViewSet):
         qs = (
             Question.objects
             .filter(type="mockTest")
-            .prefetch_related(Prefetch("options", queryset=QuestionOption.objects.order_by("id")))
+            .prefetch_related(
+                Prefetch("options", queryset=QuestionOption.objects.order_by("id")),
+                Prefetch("glossary", queryset=QuestionGlossary.objects.order_by("id")),
+            )
         )
 
         questions = list(qs)
@@ -1747,8 +1750,11 @@ class MockTestViewSet(viewsets.ViewSet):
             MockTestAnswer(session=session, question=q) for q in selected_questions
         ])
 
-        serialized = QuestionForTestSerializer(selected_questions, many=True).data
+        serialized = QuestionForTestSerializer(
+            selected_questions, many=True, context={"request": request}
+        ).data
 
+        # update evaluation
         profile = request.user.profile
         evaluation, _ = UserEvaluation.objects.get_or_create(user=profile)
         evaluation.MockTestTaken += 1
@@ -1765,13 +1771,23 @@ class MockTestViewSet(viewsets.ViewSet):
 
     def retrieve(self, request, pk=None):
         session = get_object_or_404(MockTestSession, pk=pk, user=request.user)
-        answers = session.answers.select_related('question').prefetch_related('selected_choices', 'question__options')
+
+        answers = (
+            session.answers
+            .select_related("question")
+            .prefetch_related(
+                "selected_choices",
+                Prefetch("question__options", queryset=QuestionOption.objects.order_by("id")),
+                Prefetch("question__glossary", queryset=QuestionGlossary.objects.order_by("id")),
+            )
+        )
+
         data = []
         for a in answers:
             data.append({
-                'question': QuestionForTestSerializer(a.question).data,
-                'selected_choices': list(a.selected_choices.values_list('id', flat=True)),
-                'is_correct': a.is_correct
+                "question": QuestionForTestSerializer(a.question, context={"request": request}).data,
+                "selected_choices": list(a.selected_choices.values_list("id", flat=True)),
+                "is_correct": a.is_correct
             })
 
         return Response({
@@ -1781,7 +1797,7 @@ class MockTestViewSet(viewsets.ViewSet):
                 "session_id": session.id,
                 "answers": data
             }
-        })
+        }, status=status.HTTP_200_OK)
 
     @action(detail=True, methods=['post'])
     def answer(self, request, pk=None):
