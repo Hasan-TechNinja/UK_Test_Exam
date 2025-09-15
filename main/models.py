@@ -226,6 +226,16 @@ class QuestionOption(models.Model):
         # return f"{self.question.id, self.text}"
         return f"Q{self.question.id}: {self.text}"
         # return f"Q{self.question.id} - {self.question.question_text[:40]}...: {self.text}"
+
+
+class QuestionGlossary(models.Model):
+    question = models.ForeignKey(Question, on_delete=models.CASCADE, related_name='glossary')
+    title = models.CharField(max_length=100)
+    definition = models.TextField(blank=True, null=True)
+
+    def __str__(self):
+        return f"{self.title} (Q{self.question.id})"
+
     
 class ChapterProgress(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='chapter_progress')

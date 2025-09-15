@@ -8,7 +8,7 @@ from django.db.models import Max
 from django.contrib.auth.models import AnonymousUser
 from django.core.exceptions import ValidationError as DjangoValidationError
 
-from main.models import Lesson, Chapter, Profile, GuidesSupport, HomePage, GuideSupportContent, LessonContent, UserEvaluation, Question, QuestionOption, MockTestSession, MockTestAnswer, FreeMockTestSession, FreeMockTestAnswer, ChapterProgress, LessonProgress, Glossary
+from main.models import Lesson, Chapter, Profile, GuidesSupport, HomePage, GuideSupportContent, LessonContent, QuestionGlossary, UserEvaluation, Question, QuestionOption, MockTestSession, MockTestAnswer, FreeMockTestSession, FreeMockTestAnswer, ChapterProgress, LessonProgress, Glossary
 from subscriptions.models import SubscriptionPlan, UserSubscription
 from . serializers import LessonModelSerializers, ChapterModelSerializer, QuestionForTestSerializer, RegisterSerializer, ProfileModelSerializer, GuidesSupportModelSerializer, HomePageModelSerializer, GuideSupportContentModelSerializer, LessonContentModelSerializer, UserEvaluationModelSerializer, SubscriptionPlanSerializer, UserSubscriptionSerializer, QuestionOptionSerializer, QuestionSerializer, StartMockTestSerializer, MockTestAnswerSerializer, MockTestResultSerializer, FreeMockTestAnswerSerializer, FreeMockTestResultSerializer, FreeStartMockTestSerializer
 
@@ -2192,10 +2192,23 @@ class UploadCSVAPIView(APIView):
 
     def post(self, request, *args, **kwargs):
         csv_file = request.FILES.get("file")
-        if not csv_file:
+        chapter_id = request.data.get("chapter_id")
+        lesson_id = request.data.get("lesson_id")  # optional, if you have lesson
+        question_type = request.data.get("type", "practice")
+
+        if not csv_file or not chapter_id:
             return Response({
                 "success": False,
-                "message": "CSV file is required.",
+                "message": "CSV file and chapter selection are required.",
+                "data": None
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            chapter = Chapter.objects.get(id=chapter_id)
+        except Chapter.DoesNotExist:
+            return Response({
+                "success": False,
+                "message": f"Chapter with id {chapter_id} not found.",
                 "data": None
             }, status=status.HTTP_400_BAD_REQUEST)
 
@@ -2205,38 +2218,40 @@ class UploadCSVAPIView(APIView):
 
             with transaction.atomic():
                 for row in reader:
-                    chapter_id = row.get("chapter_id")
-                    try:
-                        chapter = Chapter.objects.get(id=chapter_id)
-                    except Chapter.DoesNotExist:
-                        return Response({
-                            "success": False,
-                            "message": f"Chapter with id {chapter_id} not found.",
-                            "data": None
-                        }, status=status.HTTP_400_BAD_REQUEST)
-
                     question = Question.objects.create(
                         chapter=chapter,
-                        type=row.get("type", "practice"),
+                        type=question_type,
                         question_text=row.get("question_text"),
                         explanation=row.get("explanation", ""),
-                        multiple_answers=row.get("multiple_answers", "false").lower() == "true"
+                        multiple_answers="," in row.get("correct_answer", "")
                     )
 
-                    # Dynamically parse options
-                    for i in range(1, 10):  # Support up to 9 options
-                        option_text = row.get(f"option_{i}_text")
-                        if option_text:
-                            is_correct = row.get(f"option_{i}_correct", "false").lower() == "true"
+                    correct_answers = [c.strip() for c in row.get("correct_answer", "").split(",")]
+
+                    # Parse options dynamically
+                    for key, value in row.items():
+                        if key.startswith("option_") and value:
+                            is_correct = key in correct_answers
                             QuestionOption.objects.create(
                                 question=question,
-                                text=option_text,
+                                text=value,
                                 is_correct=is_correct
+                            )
+
+                    # Parse glossary entries
+                    for i in range(1, 10):
+                        title = row.get(f"glossary_{i}_title")
+                        definition = row.get(f"glossary_{i}_definition")
+                        if title:
+                            QuestionGlossary.objects.create(
+                                question=question,
+                                title=title,
+                                definition=definition or ""
                             )
 
             return Response({
                 "success": True,
-                "message": "Questions uploaded successfully.",
+                "message": "Questions with glossary uploaded successfully.",
                 "data": None
             }, status=status.HTTP_201_CREATED)
 
@@ -2246,7 +2261,9 @@ class UploadCSVAPIView(APIView):
                 "message": str(e),
                 "data": None
             }, status=status.HTTP_400_BAD_REQUEST)
+
         
+# ------------------------Lesson content & glossary upload csv --------------------------------
 
 class ImportLessonContentCSVView(APIView):
     """
@@ -2386,3 +2403,4 @@ class ImportLessonContentCSVView(APIView):
             },
             status=status.HTTP_201_CREATED,
         )
+
