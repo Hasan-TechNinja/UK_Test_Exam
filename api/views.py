@@ -1573,7 +1573,7 @@ class PracticeQuestionStepView(APIView):
 class PracticeQuestionListView(APIView):
     """
     GET /practice/chapters/<chapter_id>/questions/
-    Returns all practice questions in a chapter with options + correct answers
+    Returns all practice questions in a chapter with options, correct answers, and question-specific glossaries
     """
     permission_classes = [IsAuthenticated]
 
@@ -1583,9 +1583,11 @@ class PracticeQuestionListView(APIView):
             .filter(type="practice", chapter_id=chapter_id)
             .order_by("id")
             .prefetch_related(
-                Prefetch("options", queryset=QuestionOption.objects.order_by("id"))
+                Prefetch("options", queryset=QuestionOption.objects.order_by("id")),
+                Prefetch("glossary", queryset=QuestionGlossary.objects.order_by("id")),
             )
         )
+
         serialized = QuestionSerializer(questions, many=True).data
         return Response({
             "success": True,

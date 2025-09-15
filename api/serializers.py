@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from main.models import Chapter, Glossary, Lesson, Profile, GuidesSupport, UserEvaluation, HomePage, LessonContent, GuideSupportContent, QuestionOption, Question, MockTestSession, MockTestAnswer, FreeMockTestSession, FreeMockTestAnswer
+from main.models import Chapter, Glossary, Lesson, Profile, GuidesSupport, QuestionGlossary, UserEvaluation, HomePage, LessonContent, GuideSupportContent, QuestionOption, Question, MockTestSession, MockTestAnswer, FreeMockTestSession, FreeMockTestAnswer
 from subscriptions.models import SubscriptionPlan, UserSubscription
 from django.contrib.auth.models import User
 from django.contrib.auth import get_user_model
@@ -163,9 +163,44 @@ class LessonContentModelSerializer(serializers.ModelSerializer):
 class QuestionOptionSerializer(serializers.ModelSerializer):
     class Meta:
         model  = QuestionOption
-        fields = ['id', 'text']
+        fields = ['id', 'text', 'is_correct']
+
+class QuestionGlossarySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = QuestionGlossary
+        fields = ["id", "title", "definition"]
 
 
+class QuestionSerializer(serializers.ModelSerializer):
+    options = QuestionOptionSerializer(many=True, read_only=True)
+    correct_option_ids = serializers.SerializerMethodField()
+    correct_option_texts = serializers.SerializerMethodField()
+    glossaries = QuestionGlossarySerializer(source="glossary", many=True, read_only=True)
+
+    class Meta:
+        model = Question
+        fields = [
+            "id",
+            "question_text",
+            "image",
+            "multiple_answers",
+            "options",
+            "correct_option_ids",
+            "correct_option_texts",
+            "explanation",
+            "glossaries",
+        ]
+
+    def get_correct_option_ids(self, obj):
+        # already prefetched in view
+        return [opt.id for opt in obj.options.all() if opt.is_correct]
+
+    def get_correct_option_texts(self, obj):
+        return [opt.text for opt in obj.options.all() if opt.is_correct]
+    
+    
+
+'''
 class QuestionSerializer(serializers.ModelSerializer):
     options = QuestionOptionSerializer(many=True, read_only=True)
     correct_option_ids = serializers.SerializerMethodField()
@@ -187,7 +222,7 @@ class QuestionSerializer(serializers.ModelSerializer):
             lesson_content__lesson__chapter=obj.chapter
         ).distinct()
         return GlossaryModelSerializer(glossaries, many=True).data
-
+'''
 
 class QuestionForTestSerializer(serializers.ModelSerializer):
     options = QuestionOptionSerializer(many=True, read_only=True)

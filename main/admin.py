@@ -16,6 +16,10 @@ class HomePageModelAdmin(admin.ModelAdmin):
     )
 admin.site.register(HomePage, HomePageModelAdmin)
 
+class ChapterAdmin(admin.ModelAdmin):
+    list_display = ('id', 'name', 'description')
+    search_fields = ('name', 'description')
+admin.site.register(Chapter, ChapterAdmin)
 
 class GlossaryInline(admin.TabularInline):
     model = Glossary
@@ -70,7 +74,6 @@ class LessonContentAdmin(admin.ModelAdmin):
 
 
 
-admin.site.register(Chapter)
 admin.site.register(Lesson, LessonAdmin)
 admin.site.register(LessonContent, LessonContentAdmin)
 # admin.site.register(Glossary, GlossaryAdmin)
