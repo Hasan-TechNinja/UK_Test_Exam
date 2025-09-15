@@ -2233,23 +2233,22 @@ class UploadCSVAPIView(APIView):
                     # Parse options dynamically
                     for key, value in row.items():
                         if key.startswith("option_") and value:
-                            is_correct = key in correct_answers
+                            is_correct = value.strip() in correct_answers  # ✅ fix correct answer match
                             QuestionOption.objects.create(
                                 question=question,
-                                text=value,
+                                text=value.strip(),
                                 is_correct=is_correct
                             )
 
-                    # Parse glossary entries
-                    for i in range(1, 10):
-                        title = row.get(f"glossary_{i}_title")
-                        definition = row.get(f"glossary_{i}_definition")
-                        if title:
-                            QuestionGlossary.objects.create(
-                                question=question,
-                                title=title,
-                                definition=definition or ""
-                            )
+                    # Parse glossary (only one per question now)
+                    glossary_title = row.get("glossary_title")
+                    glossary_description = row.get("glossary_description")
+                    if glossary_title:
+                        QuestionGlossary.objects.create(
+                            question=question,
+                            title=glossary_title.strip(),
+                            definition=glossary_description or ""
+                        )
 
             return Response({
                 "success": True,
@@ -2263,6 +2262,7 @@ class UploadCSVAPIView(APIView):
                 "message": str(e),
                 "data": None
             }, status=status.HTTP_400_BAD_REQUEST)
+
 
         
 # ------------------------Lesson content & glossary upload csv --------------------------------
