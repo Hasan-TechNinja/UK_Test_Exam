@@ -1926,29 +1926,6 @@ class MockTestViewSet(viewsets.ViewSet):
 class FreeMockTestViewSet(viewsets.ViewSet):
     permission_classes = [IsAuthenticated]
 
-    # @action(detail=False, methods=['post'])
-    # def start(self, request):
-    #     total_questions = 24
-    #     questions = list(Question.objects.filter(type="freeMockTest"))
-    #     if len(questions) < total_questions:
-    #         return Response({
-    #             "success": False,
-    #             "message": "Not enough questions to start the test.",
-    #             "data": None
-    #         }, status=status.HTTP_400_BAD_REQUEST)
-
-    #     selected_questions = random.sample(questions, total_questions)
-    #     session = FreeMockTestSession.objects.create(user=request.user, total_questions=total_questions)
-
-    #     for q in selected_questions:
-    #         FreeMockTestAnswer.objects.create(session=session, question=q)
-
-    #     return Response({
-    #         "success": True,
-    #         "message": "Free mock test session started successfully.",
-    #         "data": FreeStartMockTestSerializer(session).data
-    #     })
-
     @action(detail=False, methods=['post'])
     def start(self, request):
         total_questions = 24
@@ -1956,7 +1933,10 @@ class FreeMockTestViewSet(viewsets.ViewSet):
         qs = (
             Question.objects
             .filter(type="freeMockTest")
-            .prefetch_related(Prefetch("options", queryset=QuestionOption.objects.order_by("id")))
+            .prefetch_related(
+                Prefetch("options", queryset=QuestionOption.objects.order_by("id")),
+                Prefetch("glossary", queryset=QuestionGlossary.objects.order_by("id")),
+            )
         )
         questions = list(qs)
 
@@ -1991,34 +1971,7 @@ class FreeMockTestViewSet(viewsets.ViewSet):
                 "questions": serialized_questions
             }
         }, status=status.HTTP_200_OK)
-
-    # def retrieve(self, request, pk=None):
-    #     session = get_object_or_404(FreeMockTestSession, pk=pk, user=request.user)
-    #     answers = session.answers.select_related('question').prefetch_related('question__options')
-
-    #     questions_data = []
-    #     for answer in answers:
-    #         question = answer.question
-    #         options = question.options.all()
-    #         questions_data.append({
-    #             'question_id': question.id,
-    #             'question_text': question.question_text,
-    #             'image': question.image.url if question.image else None,
-    #             'multiple_answers': question.multiple_answers,
-    #             'options': [
-    #                 {'id': opt.id, 'text': opt.text}
-    #                 for opt in options
-    #             ]
-    #         })
-
-    #     return Response({
-    #         "success": True,
-    #         "message": "Free mock test session retrieved successfully.",
-    #         "data": {
-    #             'session_id': session.id,
-    #             'questions': questions_data
-    #         }
-    #     })
+    
 
 
     def retrieve(self, request, pk=None):
@@ -2027,8 +1980,11 @@ class FreeMockTestViewSet(viewsets.ViewSet):
         # load questions + options in one go
         answers = (
             session.answers
-            .select_related('question')
-            .prefetch_related(Prefetch('question__options', queryset=QuestionOption.objects.order_by("id")))
+            .select_related("question")
+            .prefetch_related(
+                Prefetch("question__options", queryset=QuestionOption.objects.order_by("id")),
+                Prefetch("question__glossary", queryset=QuestionGlossary.objects.order_by("id")),
+            )
         )
 
         questions = [a.question for a in answers]

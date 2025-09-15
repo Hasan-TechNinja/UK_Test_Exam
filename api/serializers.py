@@ -228,7 +228,7 @@ class QuestionForTestSerializer(serializers.ModelSerializer):
     options = QuestionOptionSerializer(many=True, read_only=True)
     correct_option_ids = serializers.SerializerMethodField()
     correct_option_texts = serializers.SerializerMethodField()
-    glossaries = serializers.SerializerMethodField()
+    glossaries = QuestionGlossarySerializer(source="glossary", many=True, read_only=True)
 
     class Meta:
         model  = Question
@@ -240,8 +240,8 @@ class QuestionForTestSerializer(serializers.ModelSerializer):
             "options",
             "correct_option_ids",
             "correct_option_texts",
-            'explanation', 
-            'glossaries'
+            "explanation", 
+            "glossaries",
         ]
 
     def get_correct_option_ids(self, obj):
@@ -249,12 +249,6 @@ class QuestionForTestSerializer(serializers.ModelSerializer):
 
     def get_correct_option_texts(self, obj):
         return [opt.text for opt in obj.options.all() if opt.is_correct]
-    
-    def get_glossaries(self, obj):
-        glossaries = Glossary.objects.filter(
-            lesson_content__lesson__chapter=obj.chapter
-        ).distinct()
-        return GlossaryModelSerializer(glossaries, many=True).data
 
 
 class UserSerializer(serializers.ModelSerializer):
