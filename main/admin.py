@@ -230,14 +230,28 @@ class QuestionGlossaryAdmin(admin.ModelAdmin):
 admin.site.register(QuestionGlossary, QuestionGlossaryAdmin)
 
 
+
+# Inline for Question Options
+class QuestionOptionInline(admin.TabularInline):
+    model = QuestionOption
+    extra = 1
+
+# Inline for Question Glossary
+class QuestionGlossaryInline(admin.TabularInline):
+    model = QuestionGlossary
+    extra = 1
+
+# Question Admin
 @admin.register(Question)
 class QuestionAdmin(admin.ModelAdmin):
     list_display = ('id', 'chapter', 'type', 'question_text', 'explanation', 'image', 'multiple_answers')
     list_filter = ['type']
     search_fields = ['question_text', 'chapter__name']
-    inlines = [QuestionOptionInline]
 
-    # Use a custom template to add CSV upload button
+    # Include both inlines
+    inlines = [QuestionOptionInline, QuestionGlossaryInline]
+
+    # Custom template for CSV upload
     change_list_template = "admin/questions_change_list.html"
 
     # Add custom URL for CSV upload
@@ -299,7 +313,7 @@ class QuestionAdmin(admin.ModelAdmin):
                                 )
 
                 self.message_user(request, "CSV uploaded successfully!", level=messages.SUCCESS)
-                return redirect("admin:main_question_changelist")  # fixed URL
+                return redirect("admin:main_question_changelist")
 
             except Exception as e:
                 self.message_user(request, f"Error processing CSV: {str(e)}", level=messages.ERROR)
