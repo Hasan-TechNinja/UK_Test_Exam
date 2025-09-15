@@ -149,6 +149,17 @@ class GuidesSupport(models.Model):
     def __str__(self):
         return self.title
     
+class GuidesSupportGlossary(models.Model):
+    guide = models.ForeignKey(GuidesSupport, on_delete=models.CASCADE, related_name="glossaries")
+    title = models.CharField(max_length=200)
+    description = models.CharField(max_length=500)
+
+    class Meta:
+        verbose_name_plural = "Glossaries"
+
+    def __str__(self):
+        return self.title
+    
 
 class GuideSupportContent(models.Model):
     guide = models.ForeignKey(GuidesSupport, on_delete=models.CASCADE)
