@@ -8,7 +8,7 @@ from django.db.models import Max
 from django.contrib.auth.models import AnonymousUser
 from django.core.exceptions import ValidationError as DjangoValidationError
 
-from main.models import Lesson, Chapter, Profile, GuidesSupport, HomePage, GuideSupportContent, LessonContent, QuestionGlossary, UserEvaluation, Question, QuestionOption, MockTestSession, MockTestAnswer, FreeMockTestSession, FreeMockTestAnswer, ChapterProgress, LessonProgress, Glossary
+from main.models import GuidesSupportGlossary, Lesson, Chapter, Profile, GuidesSupport, HomePage, GuideSupportContent, LessonContent, QuestionGlossary, UserEvaluation, Question, QuestionOption, MockTestSession, MockTestAnswer, FreeMockTestSession, FreeMockTestAnswer, ChapterProgress, LessonProgress, Glossary
 from subscriptions.models import SubscriptionPlan, UserSubscription
 from . serializers import LessonModelSerializers, ChapterModelSerializer, QuestionForTestSerializer, RegisterSerializer, ProfileModelSerializer, GuidesSupportModelSerializer, HomePageModelSerializer, GuideSupportContentModelSerializer, LessonContentModelSerializer, UserEvaluationModelSerializer, SubscriptionPlanSerializer, UserSubscriptionSerializer, QuestionOptionSerializer, QuestionSerializer, StartMockTestSerializer, MockTestAnswerSerializer, MockTestResultSerializer, FreeMockTestAnswerSerializer, FreeMockTestResultSerializer, FreeStartMockTestSerializer
 
@@ -1277,11 +1277,8 @@ class GuideSupportView(APIView):
         }, status=status.HTTP_200_OK)
 
 
+
 class GuideSupportContentView(APIView):
-    """
-    GET /guide/<guide_id>/?step=0
-    Returns 10 items per step (pagination)
-    """
     PAGE_SIZE = 10
 
     def get(self, request, guide_id):
@@ -1314,7 +1311,6 @@ class GuideSupportContentView(APIView):
 
         current_items = contents_qs[start:end]
 
-        # Serialize manually with glossary_list
         content_data = []
         for item in current_items:
             content_data.append({
@@ -1323,7 +1319,14 @@ class GuideSupportContentView(APIView):
                 "description": item.description,
                 "video": item.video,
                 "created": item.created,
-                "glossary_list": item.get_glossary_string_list(),
+                "glossary_list": [
+                    {
+                        "id": g.id,
+                        "title": g.title,
+                        "description": g.description,
+                    }
+                    for g in item.glossaries.all()  # ✅ fixed
+                ]
             })
 
         return Response({
@@ -2378,3 +2381,143 @@ class ImportLessonContentCSVView(APIView):
             status=status.HTTP_201_CREATED,
         )
 
+
+
+class ImportGuideSupportCSVView(APIView):
+    """
+    POST multipart/form-data:
+      - guide_id (int)
+      - file (CSV)
+
+    CSV headers:
+      - Base (required): description, video
+      - Glossary (repeatable): glossary_title, glossary_description, glossary_title, glossary_description, ...
+
+    Behavior:
+      - Creates ONE GuideSupportContent per CSV row (linked to the provided guide_id).
+      - For each row, reads any number of (title, description) glossary pairs and creates them.
+    """
+    permission_classes = [permissions.IsAdminUser]
+
+    REQUIRED_BASE_FIELDS = ["description", "video"]
+    GLOSSARY_TITLE = "glossary_title"
+    GLOSSARY_DESC = "glossary_description"
+
+    def post(self, request):
+        guide_id = request.data.get("guide_id")
+        if not guide_id:
+            return Response({"detail": "guide_id is required."}, status=status.HTTP_400_BAD_REQUEST)
+
+        guide = get_object_or_404(GuidesSupport, id=guide_id)
+
+        upload = request.FILES.get("file")
+        if not upload:
+            return Response({"detail": "Please attach a CSV file."}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Robust decoding; handles BOM too
+        file_obj = TextIOWrapper(upload.file, encoding="utf-8-sig", newline="")
+
+        # Try to detect delimiter
+        sample = file_obj.read(4096)
+        file_obj.seek(0)
+        try:
+            dialect = csv.Sniffer().sniff(sample, delimiters=[",", "\t", ";", "|"])
+            delimiter = dialect.delimiter
+        except csv.Error:
+            delimiter = ","
+
+        reader = csv.reader(file_obj, delimiter=delimiter)
+
+        # Header
+        try:
+            header = next(reader)
+        except StopIteration:
+            return Response({"detail": "CSV is empty."}, status=status.HTTP_400_BAD_REQUEST)
+
+        norm_header = [h.strip().lower() for h in header]
+
+        # Validate required base fields
+        missing = [f for f in self.REQUIRED_BASE_FIELDS if f not in norm_header]
+        if missing:
+            return Response(
+                {"detail": f"Missing required columns: {', '.join(missing)}"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        # Index map for base fields
+        idx = {name: norm_header.index(name) for name in self.REQUIRED_BASE_FIELDS}
+
+        # Collect all glossary_title and glossary_description column indices
+        g_title_idxs = [i for i, h in enumerate(norm_header) if h == self.GLOSSARY_TITLE]
+        g_desc_idxs  = [i for i, h in enumerate(norm_header) if h == self.GLOSSARY_DESC]
+
+        # Pair them in order; extra unmatched columns (if any) are ignored
+        glossary_pairs = list(zip(g_title_idxs, g_desc_idxs))
+
+        created_counts = {"guide_support_contents": 0, "glossaries": 0}
+        errors = []
+
+        @transaction.atomic
+        def process_rows():
+            nonlocal created_counts
+
+            for row_num, row in enumerate(reader, start=2):  # 1-based header → first data row is 2
+                # Pad short rows
+                if len(row) < len(norm_header):
+                    row = row + [""] * (len(norm_header) - len(row))
+
+                description = (row[idx["description"]] or "").strip()
+                video       = (row[idx["video"]] or "").strip()
+
+                if not description:
+                    errors.append({"row": row_num, "error": "description is required"})
+                    continue
+
+                # Create the content (image not provided by CSV; leave null)
+                try:
+                    content = GuideSupportContent.objects.create(
+                        guide=guide,
+                        description=description,
+                        video=video or "",
+                        # image stays NULL by default
+                    )
+                    created_counts["guide_support_contents"] += 1
+                except Exception as e:
+                    errors.append({"row": row_num, "error": f"GuideSupportContent create failed: {e}"})
+                    continue
+
+                # Create glossaries found in this row
+                glossaries = []
+                for ti, di in glossary_pairs:
+                    g_title = (row[ti] if ti < len(row) else "") or ""
+                    g_desc  = (row[di] if di < len(row) else "") or ""
+                    g_title = g_title.strip()
+                    g_desc  = g_desc.strip()
+
+                    if g_title:  # title is the trigger to create a glossary
+                        glossaries.append(
+                            GuidesSupportGlossary(
+                                guide=content,      # FK -> GuideSupportContent
+                                title=g_title[:200],
+                                description=g_desc[:500],
+                            )
+                        )
+
+                if glossaries:
+                    GuidesSupportGlossary.objects.bulk_create(glossaries)
+                    created_counts["glossaries"] += len(glossaries)
+
+        try:
+            process_rows()
+        except Exception as e:
+            return Response({"detail": "Import failed", "error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+        return Response(
+            {
+                "success": True,
+                "message": "Guide support content imported successfully.",
+                "data": created_counts,
+                # "errors": errors,  # uncomment if you want to return per-row issues
+            },
+            status=status.HTTP_201_CREATED,
+        )

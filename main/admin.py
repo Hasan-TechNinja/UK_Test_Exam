@@ -1,5 +1,5 @@
 from django.contrib import admin, messages
-from . models import Chapter, Glossary, Lesson, Profile, GuidesSupport, GuideSupportContent, LessonContent, HomePage, QuestionGlossary, QuestionOption, Question, UserEvaluation, MockTestAnswer, MockTestSession, FreeMockTestSession, FreeMockTestAnswer, ChapterProgress, LessonProgress
+from . models import Chapter, Glossary, GuidesSupportGlossary, Lesson, Profile, GuidesSupport, GuideSupportContent, LessonContent, HomePage, QuestionGlossary, QuestionOption, Question, UserEvaluation, MockTestAnswer, MockTestSession, FreeMockTestSession, FreeMockTestAnswer, ChapterProgress, LessonProgress
 from rest_framework.authtoken.models import Token
 import csv
 from io import TextIOWrapper
@@ -94,20 +94,25 @@ class UserEvaluationModelAdmin(admin.ModelAdmin):
 admin.site.register(UserEvaluation, UserEvaluationModelAdmin)
 
 
-
 class GuidesSupportModelAdmin(admin.ModelAdmin):
-    list_display = (
-        'id', 'name', 'title', 'created'
-    )
+    list_display = ('id', 'name', 'title', 'created')
+
+
 admin.site.register(GuidesSupport, GuidesSupportModelAdmin)
 
 
-class GuideSupportContentModelAdmin(admin.ModelAdmin):
-    list_display = (
-        'id', 'guide', 'image', 'description', 'video', 'created'
-    )
-admin.site.register(GuideSupportContent, GuideSupportContentModelAdmin)
+class GuidesSupportGlossaryInline(admin.TabularInline):
+    model = GuidesSupportGlossary
+    extra = 1
 
+
+
+class GuideSupportContentModelAdmin(admin.ModelAdmin):
+    list_display = ('id', 'guide', 'image', 'description', 'video', 'created')
+    inlines = [GuidesSupportGlossaryInline]
+
+
+admin.site.register(GuideSupportContent, GuideSupportContentModelAdmin)
 
 
 class MockTestSessionAdmin(admin.ModelAdmin):

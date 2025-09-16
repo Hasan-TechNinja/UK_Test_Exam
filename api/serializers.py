@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from main.models import Chapter, Glossary, Lesson, Profile, GuidesSupport, QuestionGlossary, UserEvaluation, HomePage, LessonContent, GuideSupportContent, QuestionOption, Question, MockTestSession, MockTestAnswer, FreeMockTestSession, FreeMockTestAnswer
+from main.models import Chapter, Glossary, GuidesSupportGlossary, Lesson, Profile, GuidesSupport, QuestionGlossary, UserEvaluation, HomePage, LessonContent, GuideSupportContent, QuestionOption, Question, MockTestSession, MockTestAnswer, FreeMockTestSession, FreeMockTestAnswer
 from subscriptions.models import SubscriptionPlan, UserSubscription
 from django.contrib.auth.models import User
 from django.contrib.auth import get_user_model
@@ -105,11 +105,16 @@ class ProfileModelSerializer(serializers.ModelSerializer):
         model = Profile
         exclude = ["user", "id", "created_at"]
 
-
 class GuidesSupportModelSerializer(serializers.ModelSerializer):
     class Meta:
         model = GuidesSupport
         exclude = ['created']
+
+
+class GuideSupportGlossarySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = GuidesSupportGlossary
+        fields = ['id', 'guide', 'title', 'description']
 
 
 class GuideSupportContentModelSerializer(serializers.ModelSerializer):
@@ -120,7 +125,15 @@ class GuideSupportContentModelSerializer(serializers.ModelSerializer):
         fields = ['id', 'image', 'description', 'video', 'created', 'glossary_list']
 
     def get_glossary_list(self, obj):
-        return obj.get_glossary_string_list()
+        glossaries = obj.glossaries.all()
+        return [
+            {
+                "id": g.id,
+                "title": g.title,
+                "description": g.description,
+            }
+            for g in glossaries
+        ]
 
 
 
