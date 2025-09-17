@@ -22,6 +22,7 @@ class EmailVerification(models.Model):
 class Profile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='profile')
     full_name = models.CharField(max_length=100, default="Name")
+    phone = models.CharField(max_length=50, blank=True, null=True)
     image = models.ImageField(upload_to='profile_images/', null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
 

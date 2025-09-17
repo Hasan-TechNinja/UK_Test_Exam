@@ -82,7 +82,7 @@ admin.site.register(LessonContent, LessonContentAdmin)
 
 class ProfileModelAdmin(admin.ModelAdmin):
     list_display = (
-        'id', 'full_name', 'image', 'created_at'
+        'id', 'full_name', 'phone', 'image', 'created_at'
     )
 admin.site.register(Profile, ProfileModelAdmin)
 

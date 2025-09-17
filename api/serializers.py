@@ -11,6 +11,7 @@ from django.core.mail import send_mail
 import random
 import json
 from django.utils.text import slugify
+from django.db import transaction
 
 
 
@@ -28,9 +29,19 @@ class ChapterModelSerializer(serializers.ModelSerializer):
 
 
 class LessonModelSerializers(serializers.ModelSerializer):
+    # Read-only nested object for responses
+    chapter = ChapterModelSerializer(read_only=True)
+    # Write-only field for requests (accepts the id)
+    chapter_id = serializers.PrimaryKeyRelatedField(
+        source="chapter",
+        queryset=Chapter.objects.all(),
+        write_only=True
+    )
+
     class Meta:
         model = Lesson
-        exclude = ['created']
+        # include both; created excluded as you had
+        fields = ("id", "name", "title", "chapter", "chapter_id")
 
 
 class GlossaryModelSerializer(serializers.ModelSerializer):
@@ -56,16 +67,27 @@ class RegisterSerializer(serializers.ModelSerializer):
     )
     password = serializers.CharField(write_only=True, validators=[validate_password])
 
+    # NEW: accept phone during registration (write-only; not a User field)
+    phone = serializers.CharField(
+        write_only=True,
+        required=False,
+        allow_blank=True,
+        allow_null=True,
+        max_length=50
+    )
+
     class Meta:
         model = User
-        fields = ['email', 'password']  # Removed username input
+        fields = ['email', 'password', 'phone']  # include phone here
 
+    @transaction.atomic
     def create(self, validated_data):
+        phone = validated_data.pop('phone', None)  # get phone from payload
         email = validated_data['email']
-        username_base = slugify(email.split('@')[0])
-        username = username_base
 
-        # Ensure uniqueness
+        # create unique username from email
+        username_base = slugify(email.split('@')[0]) or "user"
+        username = username_base
         counter = 1
         while User.objects.filter(username=username).exists():
             username = f"{username_base}{counter}"
@@ -78,6 +100,13 @@ class RegisterSerializer(serializers.ModelSerializer):
             is_active=False
         )
 
+        # ensure a Profile exists and set the phone
+        profile, _ = Profile.objects.get_or_create(user=user)
+        if phone:
+            profile.phone = phone
+            profile.save(update_fields=["phone"])
+
+        # send verification code
         code = str(random.randint(100000, 999999))
         EmailVerification.objects.create(user=user, code=code)
 
