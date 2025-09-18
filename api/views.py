@@ -2223,7 +2223,7 @@ class UploadCSVAPIView(APIView):
                         QuestionGlossary.objects.create(
                             question=question,
                             title=glossary_title.strip(),
-                            definition=glossary_description or ""
+                            description=glossary_description or ""
                         )
 
             return Response({

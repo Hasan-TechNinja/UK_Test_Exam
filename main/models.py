@@ -210,7 +210,7 @@ class QuestionOption(models.Model):
 class QuestionGlossary(models.Model):
     question = models.ForeignKey(Question, on_delete=models.CASCADE, related_name='glossary')
     title = models.CharField(max_length=100)
-    definition = models.TextField(blank=True, null=True)
+    description = models.TextField(blank=True, null=True)
 
     def __str__(self):
         return f"{self.title} (Q{self.question.id})"

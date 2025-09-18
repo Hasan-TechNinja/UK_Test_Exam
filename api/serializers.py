@@ -210,7 +210,7 @@ class QuestionOptionSerializer(serializers.ModelSerializer):
 class QuestionGlossarySerializer(serializers.ModelSerializer):
     class Meta:
         model = QuestionGlossary
-        fields = ["id", "title", "definition"]
+        fields = ["id", "title", "description"]
 
 
 class QuestionSerializer(serializers.ModelSerializer):
