@@ -2203,15 +2203,16 @@ class UploadCSVAPIView(APIView):
                         multiple_answers="," in row.get("correct_answer", "")
                     )
 
-                    correct_answers = [c.strip() for c in row.get("correct_answer", "").split(",")]
+                    correct_answers = [c.strip().lower() for c in row.get("correct_answer", "").split(",")]
 
-                    # Parse options dynamically
                     for key, value in row.items():
                         if key.startswith("option_") and value:
-                            is_correct = value.strip() in correct_answers  # ✅ fix correct answer match
+                            option_text = value.strip()
+                            # Match by either option text OR option key
+                            is_correct = key.lower() in correct_answers or option_text.lower() in correct_answers
                             QuestionOption.objects.create(
                                 question=question,
-                                text=value.strip(),
+                                text=option_text,
                                 is_correct=is_correct
                             )
 
