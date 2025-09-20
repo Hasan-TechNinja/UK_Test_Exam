@@ -223,6 +223,8 @@ class QuestionSerializer(serializers.ModelSerializer):
         model = Question
         fields = [
             "id",
+            "chapter",             
+            "type",
             "question_text",
             "image",
             "multiple_answers",
