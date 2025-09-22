@@ -6,7 +6,7 @@ from rest_framework.permissions import IsAuthenticated, AllowAny
 from django.shortcuts import get_object_or_404
 from django.contrib.auth.models import AnonymousUser
 
-from main.models import LessonProgress
+# from main.models import LessonProgress
 from .models import GuideChapter, GuideLesson, GuideLessonContent, GuideLessonProgress
 from .serializers import ChapterModelSerializer, LessonModelSerializers, LessonContentModelSerializer
 from django.db.models import Count, Q
@@ -80,7 +80,7 @@ class ChapterLessonsView(APIView):
             }
 
             if show_progress:
-                progress = LessonProgress.objects.filter(user=request.user, lesson=lesson).first()
+                progress = GuideLessonProgress.objects.filter(user=request.user, lesson=lesson).first()
                 percentage = progress.completion_percentage if progress else 0.0
                 lesson_data['completion_percentage'] = round(percentage, 2)
 
@@ -130,7 +130,7 @@ class ChapterLessonDetailView(APIView):
 
         if request.user.is_authenticated:
             user = request.user
-            progress_obj, _ = LessonProgress.objects.get_or_create(user=user, lesson=lesson)
+            progress_obj, _ = GuideLessonProgress.objects.get_or_create(user=user, lesson=lesson)
 
             for content in current_page_items:
                 if content not in progress_obj.completed_contents.all():

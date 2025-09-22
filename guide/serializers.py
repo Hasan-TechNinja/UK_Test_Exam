@@ -10,8 +10,12 @@ class ChapterModelSerializer(serializers.ModelSerializer):
         fields = ['id', 'name', 'description', 'lessons']
 
     def get_lessons(self, obj):
-        lesson_qs = obj.guidelesson_set.all().order_by('id')
-        return [f"{i+1}" for i, _ in enumerate(lesson_qs)]
+        # lesson_qs = obj.guidelesson_set.all().order_by('id')
+        lesson_qs = obj.lessons.all().order_by('id')
+
+        # return [f"{i+1}" for i, _ in enumerate(lesson_qs)]
+        return [{"id": l.id, "name": l.name, "title": l.title} for l in lesson_qs]
+
 
 
 class LessonModelSerializers(serializers.ModelSerializer):
