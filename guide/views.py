@@ -151,3 +151,6 @@ class ChapterLessonDetailView(APIView):
                 "content": serializer.data
             }
         }, status=status.HTTP_200_OK)
+
+
+# update code 
