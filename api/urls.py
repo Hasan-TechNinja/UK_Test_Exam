@@ -78,6 +78,7 @@ urlpatterns = [
     path('mock-test/<int:pk>/finish/', views.MockTestViewSet.as_view({'post': 'finish'}), name='mock-test-finish'),
     path('mock-test/history/', views.MockTestViewSet.as_view({'get': 'history'}), name='mock-test-history'),
     
+    
 
     # free mock test
     # path('free-mock-tests/start/', views.FreeMockTestViewSet.as_view({'post': 'start'}), name='free-mock-start'),
