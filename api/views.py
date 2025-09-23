@@ -1725,7 +1725,7 @@ class MockTestHomeViewSet(APIView):
 class MockTestViewSet(viewsets.ViewSet):
     permission_classes = [IsAuthenticated]
 
-    @action(detail=False, methods=['post'])
+    @action(detail=False, methods=['get', 'post'])
     def start(self, request):
         total_questions = 24
 
@@ -1945,7 +1945,7 @@ class MockTestViewSet(viewsets.ViewSet):
 class FreeMockTestViewSet(viewsets.ViewSet):
     permission_classes = [IsAuthenticated]
 
-    @action(detail=False, methods=['post'])
+    @action(detail=False, methods=['get', 'post'])
     def start(self, request):
         total_questions = 24
 

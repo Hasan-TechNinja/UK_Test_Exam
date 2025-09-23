@@ -69,7 +69,9 @@ urlpatterns = [
     # path('mock-tests/<int:pk>/finish/', views.MockTestViewSet.as_view({'post': 'finish'})),
     # path('mock-tests/history/', views.MockTestViewSet.as_view({'get': 'history'})),
 
-    path('mock-test/start/', views.MockTestViewSet.as_view({'post': 'start'}), name='mock-test-start'),
+    # path('mock-test/start/', views.MockTestViewSet.as_view({'post': 'start'}), name='mock-test-start'),
+    path('mock-test/start/', views.MockTestViewSet.as_view({'post': 'start','get': 'start',}), name='mock-test-start'),
+
     path('mock-test/<int:pk>/submit-all/', views.MockTestViewSet.as_view({'post': 'submit_all_answers'}), name='mock-test-submit-all'),
     path('mock-test/<int:pk>/', views.MockTestViewSet.as_view({'get': 'retrieve'}), name='mock-test-detail'),
     path('mock-test/<int:pk>/answer/', views.MockTestViewSet.as_view({'post': 'answer'}), name='mock-test-answer'),
@@ -78,7 +80,9 @@ urlpatterns = [
     
 
     # free mock test
-    path('free-mock-tests/start/', views.FreeMockTestViewSet.as_view({'post': 'start'}), name='free-mock-start'),
+    # path('free-mock-tests/start/', views.FreeMockTestViewSet.as_view({'post': 'start'}), name='free-mock-start'),
+    path('free-mock-tests/start/',views.FreeMockTestViewSet.as_view({'post': 'start','get': 'start',}), name='free-mock-start',),
+
     path('free-mock-tests/<int:pk>/', free_mock_test, name='free-mock-retrieve'),
     path('free-mock-tests/<int:pk>/answer/', views.FreeMockTestViewSet.as_view({'post': 'answer'}), name='free-mock-answer'),
     path('free-mock-tests/<int:pk>/finish/', views.FreeMockTestViewSet.as_view({'post': 'finish'}), name='free-mock-finish'),
