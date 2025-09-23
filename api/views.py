@@ -1889,7 +1889,7 @@ class MockTestViewSet(viewsets.ViewSet):
         if not isinstance(submitted_answers, list):
             return Response({
                 "success": False,
-                "message": 'Answers must be a list of question and choices.',
+                "message": 'Answers must be a list of question_id and selected_options.',
                 "data": None
             }, status=status.HTTP_400_BAD_REQUEST)
 
@@ -1897,8 +1897,8 @@ class MockTestViewSet(viewsets.ViewSet):
         total = session.answers.count()
 
         for item in submitted_answers:
-            question_id = item.get('question')
-            choice_ids = item.get('selected_choice_ids', [])
+            question_id = item.get('question_id')
+            choice_ids = item.get('selected_options', [])
 
             if not question_id or not isinstance(choice_ids, list):
                 continue  # Skip invalid item
@@ -2024,13 +2024,13 @@ class FreeMockTestViewSet(viewsets.ViewSet):
     @action(detail=True, methods=['post'])
     def answer(self, request, pk=None):
         session = get_object_or_404(FreeMockTestSession, pk=pk, user=request.user)
-        question_id = request.data.get('question')
-        choice_ids = request.data.get('selected_choice_ids', [])
+        question_id = request.data.get('question_id')
+        choice_ids = request.data.get('selected_options', [])
 
         if question_id is None or not isinstance(choice_ids, list):
             return Response({
                 "success": False,
-                "message": 'Both "question" and "selected_choice_ids" are required and choice_ids must be a list.',
+                "message": 'Both "question_id" and "selected_options" are required.',
                 "data": None
             }, status=status.HTTP_400_BAD_REQUEST)
 
@@ -2043,19 +2043,15 @@ class FreeMockTestViewSet(viewsets.ViewSet):
                 "data": None
             }, status=status.HTTP_400_BAD_REQUEST)
 
-        # Check if choices belong to the question
         valid_choice_ids = set(answer.question.options.values_list('id', flat=True))
         if not set(choice_ids).issubset(valid_choice_ids):
             return Response({
                 "success": False,
-                "message": 'One or more selected choices are invalid for this question.',
+                "message": 'One or more choices are invalid for this question.',
                 "data": None
             }, status=status.HTTP_400_BAD_REQUEST)
 
-        # Save selected choices
         answer.selected_choices.set(choice_ids)
-
-        # Check correctness
         correct_ids = set(answer.question.options.filter(is_correct=True).values_list('id', flat=True))
         answer.is_correct = set(choice_ids) == correct_ids
         answer.save()
@@ -2063,7 +2059,9 @@ class FreeMockTestViewSet(viewsets.ViewSet):
         return Response({
             "success": True,
             "message": 'Answer submitted successfully.',
-            "data": {'correct': answer.is_correct}
+            "data": {
+                'correct': answer.is_correct
+            }
         })
 
     @action(detail=True, methods=['post'])
@@ -2106,8 +2104,8 @@ class FreeMockTestViewSet(viewsets.ViewSet):
         detailed_results = []
 
         for item in answers_data:
-            question_id = item.get('question')
-            selected_ids = item.get('selected_choice_ids', [])
+            question_id = item.get('question_id')
+            selected_ids = item.get('selected_options', [])
 
             if question_id is None or not isinstance(selected_ids, list):
                 continue  # Skip invalid entries
@@ -2128,7 +2126,7 @@ class FreeMockTestViewSet(viewsets.ViewSet):
             answer.is_correct = is_correct
             answer.save()
 
-            correct_choice_ids = list(answer.question.options.filter(is_correct=True).values_list('id', flat=True))
+            correct_choice_ids = list(correct_ids)
 
             total += 1
             if is_correct:
@@ -2137,8 +2135,8 @@ class FreeMockTestViewSet(viewsets.ViewSet):
             detailed_results.append({
                 'question_id': answer.question.id,
                 'question': answer.question.question_text,
-                'selected_choices': selected_ids,
-                'correct_choices': correct_choice_ids,
+                'selected_options': selected_ids,
+                'correct_options': correct_choice_ids,
                 'is_correct': is_correct
             })
 
