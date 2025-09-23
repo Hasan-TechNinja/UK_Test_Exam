@@ -77,7 +77,7 @@ urlpatterns = [
     path('mock-test/<int:pk>/answer/', views.MockTestViewSet.as_view({'post': 'answer'}), name='mock-test-answer'),
     path('mock-test/<int:pk>/finish/', views.MockTestViewSet.as_view({'post': 'finish'}), name='mock-test-finish'),
     path('mock-test/history/', views.MockTestViewSet.as_view({'get': 'history'}), name='mock-test-history'),
-    
+
     
 
     # free mock test
@@ -101,6 +101,7 @@ urlpatterns = [
 
     path('upload-study-csv/', views.ImportLessonContentCSVView.as_view(), name='upload_csv'),
     path("upload-guidesupport-csv/", views.ImportGuideSupportCSVView.as_view(), name="upload_guidesupport_csv"),
+    
 
 ]
     
