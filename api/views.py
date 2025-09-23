@@ -1844,6 +1844,7 @@ class MockTestViewSet(viewsets.ViewSet):
                 'correct': answer.is_correct
             }
         })
+        
 
     @action(detail=True, methods=['post'])
     def finish(self, request, pk=None):
