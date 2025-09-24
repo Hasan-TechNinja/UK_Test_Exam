@@ -46,10 +46,27 @@ class LessonAdmin(admin.ModelAdmin):
 
 
 class LessonProgressAdmin(admin.ModelAdmin):
-    list_display = (
-        'id', 'user', 'lesson', 'completion_percentage'
-    )
+    list_display = ('id', 'user', 'lesson', 'completion_percentage')
+
+    # Make all fields read-only
+    def get_readonly_fields(self, request, obj=None):
+        if obj:  # editing existing object
+            return [f.name for f in self.model._meta.fields]
+        return super().get_readonly_fields(request, obj)
+
+    # Disable add, change, and delete permissions
+    def has_add_permission(self, request):
+        return False
+
+    def has_change_permission(self, request, obj=None):
+        return False
+
+    def has_delete_permission(self, request, obj=None):
+        return False
+
+
 admin.site.register(LessonProgress, LessonProgressAdmin)
+
 
 
 class LessonContentAdmin(admin.ModelAdmin):
@@ -81,75 +98,129 @@ admin.site.register(LessonContent, LessonContentAdmin)
 
 
 class ProfileModelAdmin(admin.ModelAdmin):
-    list_display = (
-        'id', 'full_name', 'phone', 'image', 'created_at'
-    )
+    list_display = ('id', 'full_name', 'phone', 'image', 'created_at')
+
+    # Make all fields read-only
+    def get_readonly_fields(self, request, obj=None):
+        if obj:  # editing existing object
+            return [f.name for f in self.model._meta.fields]
+        return super().get_readonly_fields(request, obj)
+
+    # Disable add, change, and delete permissions
+    def has_add_permission(self, request):
+        return False
+
+    def has_change_permission(self, request, obj=None):
+        return False
+
+    def has_delete_permission(self, request, obj=None):
+        return False
+
+
 admin.site.register(Profile, ProfileModelAdmin)
+
 
 
 class UserEvaluationModelAdmin(admin.ModelAdmin):
     list_display = (
-        'id', 'user', 'MockTestTaken', 'LeftMockTest', 'PracticeCompleted', 'QuestionAnswered', 'CorrectAnswered', 'WrongAnswered'
+        'id', 'user', 'MockTestTaken', 'LeftMockTest',
+        'PracticeCompleted', 'QuestionAnswered',
+        'CorrectAnswered', 'WrongAnswered'
     )
+
+    # Make all fields read-only
+    def get_readonly_fields(self, request, obj=None):
+        if obj:  # when viewing an existing object
+            return [f.name for f in self.model._meta.fields]
+        return super().get_readonly_fields(request, obj)
+
+    # Disable add, change, and delete
+    def has_add_permission(self, request):
+        return False
+
+    def has_change_permission(self, request, obj=None):
+        return False
+
+    def has_delete_permission(self, request, obj=None):
+        return False
+
+
 admin.site.register(UserEvaluation, UserEvaluationModelAdmin)
 
 
-class GuidesSupportModelAdmin(admin.ModelAdmin):
-    list_display = ('id', 'name', 'title', 'created')
+
+# class GuidesSupportModelAdmin(admin.ModelAdmin):
+#     list_display = ('id', 'name', 'title', 'created')
 
 
-admin.site.register(GuidesSupport, GuidesSupportModelAdmin)
+# admin.site.register(GuidesSupport, GuidesSupportModelAdmin)
 
 
-class GuidesSupportGlossaryInline(admin.TabularInline):
-    model = GuidesSupportGlossary
-    extra = 1
-
-
-
-class GuideSupportContentModelAdmin(admin.ModelAdmin):
-    list_display = ('id', 'guide', 'image', 'description', 'video', 'created')
-    inlines = [GuidesSupportGlossaryInline]
-
-
-admin.site.register(GuideSupportContent, GuideSupportContentModelAdmin)
-
-
-class MockTestSessionAdmin(admin.ModelAdmin):
-    list_display = (
-        'id', 'user', 'started_at', 'finished_at', 'score', 'total_questions', 'duration_minutes', 
-    )
-admin.site.register(MockTestSession, MockTestSessionAdmin)
+# class GuidesSupportGlossaryInline(admin.TabularInline):
+#     model = GuidesSupportGlossary
+#     extra = 1
 
 
 
-class MockTestAnswerAdmin(admin.ModelAdmin):
-    list_display = (
-        'id', 'session', 'question', 'is_correct'
-    )
-admin.site.register(MockTestAnswer, MockTestAnswerAdmin)
+# class GuideSupportContentModelAdmin(admin.ModelAdmin):
+#     list_display = ('id', 'guide', 'image', 'description', 'video', 'created')
+#     inlines = [GuidesSupportGlossaryInline]
+
+
+# admin.site.register(GuideSupportContent, GuideSupportContentModelAdmin)
+
+
+# class MockTestSessionAdmin(admin.ModelAdmin):
+#     list_display = (
+#         'id', 'user', 'started_at', 'finished_at', 'score', 'total_questions', 'duration_minutes', 
+#     )
+# admin.site.register(MockTestSession, MockTestSessionAdmin)
 
 
 
-class FreeMockTestSessionAdmin(admin.ModelAdmin):
-    list_display = (
-        'id', 'user', 'started_at', 'finished_at', 'score', 'total_questions', 'duration_minutes', 
-    )
-admin.site.register(FreeMockTestSession, FreeMockTestSessionAdmin)
+# class MockTestAnswerAdmin(admin.ModelAdmin):
+#     list_display = (
+#         'id', 'session', 'question', 'is_correct'
+#     )
+# admin.site.register(MockTestAnswer, MockTestAnswerAdmin)
 
 
 
-class FreeMockTestAnswerAdmin(admin.ModelAdmin):
-    list_display = (
-        'id', 'session', 'question', 'is_correct'
-    )
-admin.site.register(FreeMockTestAnswer, FreeMockTestAnswerAdmin)
+# class FreeMockTestSessionAdmin(admin.ModelAdmin):
+#     list_display = (
+#         'id', 'user', 'started_at', 'finished_at', 'score', 'total_questions', 'duration_minutes', 
+#     )
+# admin.site.register(FreeMockTestSession, FreeMockTestSessionAdmin)
+
+
+
+# class FreeMockTestAnswerAdmin(admin.ModelAdmin):
+#     list_display = (
+#         'id', 'session', 'question', 'is_correct'
+#     )
+# admin.site.register(FreeMockTestAnswer, FreeMockTestAnswerAdmin)
 
 
 @admin.register(ChapterProgress)
 class ChapterProgressAdmin(admin.ModelAdmin):
     list_display = ('user', 'chapter', 'completion_percentage')
     list_filter = ('chapter',)
+
+    # Make all fields read-only
+    def get_readonly_fields(self, request, obj=None):
+        if obj:  # editing existing object
+            return [f.name for f in self.model._meta.fields]
+        return super().get_readonly_fields(request, obj)
+
+    # Disable add, change, and delete permissions
+    def has_add_permission(self, request):
+        return False
+
+    def has_change_permission(self, request, obj=None):
+        return False
+
+    def has_delete_permission(self, request, obj=None):
+        return False
 
 
 
