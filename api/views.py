@@ -1502,13 +1502,13 @@ class UserSubscriptionViewSet(viewsets.GenericViewSet):
 #-------------------------------------Practice Chapter view-------------------------------------
 
 class PracticeChapterList(APIView):
-    permission_classes = [AllowAny]  # Allow both authenticated and unauthenticated users
+    permission_classes = [AllowAny] 
 
     def get(self, request):
         user = request.user
         is_authenticated = user and not isinstance(user, AnonymousUser)
 
-        chapters = Chapter.objects.all()
+        chapters = Chapter.objects.all().order_by('created')[::1]
         data = []
 
         for chapter in chapters:
