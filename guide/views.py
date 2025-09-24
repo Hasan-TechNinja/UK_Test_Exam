@@ -1,17 +1,21 @@
 from django.shortcuts import render
 from rest_framework.views import APIView
 from rest_framework.response import Response
-from rest_framework import status
+from rest_framework import status, permissions
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from django.shortcuts import get_object_or_404
 from django.contrib.auth.models import AnonymousUser
 
 # from main.models import LessonProgress
-from .models import GuideChapter, GuideLesson, GuideLessonContent, GuideLessonProgress
+from .models import GuideChapter, GuideLesson, GuideLessonContent, GuideLessonProgress, GuideGlossary
 from .serializers import ChapterModelSerializer, LessonModelSerializers, LessonContentModelSerializer
 from django.db.models import Count, Q
 from rest_framework import generics, permissions as permisons
 from rest_framework.permissions import IsAdminUser
+
+import csv
+from io import TextIOWrapper
+from django.db import transaction
 
 
 
@@ -400,3 +404,148 @@ class LessonContentDetailsAdminView(generics.RetrieveUpdateDestroyAPIView):
             "message": "Lesson content deleted successfully.",
             "data": None
         }, status=status.HTTP_204_NO_CONTENT)
+    
+
+
+class ImportGuideLessonContentCSVView(APIView):
+    """
+    POST multipart/form-data:
+      - chapter_id (int)
+      - lesson_id (int)
+      - file (CSV file with headers like: description,video,glossary_title,glossary_description,...)
+
+    Notes:
+    - Admin selects Chapter and Lesson from UI, so CSV only needs content & glossary fields.
+    - Glossary pairs (title, description) can repeat in any number of columns.
+    """
+    permission_classes = [permissions.IsAdminUser]
+
+    REQUIRED_BASE_FIELDS = ["description", "video"]
+    GLOSSARY_TITLE = "glossary_title"
+    GLOSSARY_DESC = "glossary_description"
+
+    def post(self, request):
+        chapter_id = request.data.get("chapter_id")
+        lesson_id = request.data.get("lesson_id")
+
+        if not (chapter_id and lesson_id):
+            return Response(
+                {"detail": "chapter_id and lesson_id are required."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        # Validate lesson exists
+        try:
+            lesson = GuideLesson.objects.get(id=lesson_id, chapter_id=chapter_id)
+        except GuideLesson.DoesNotExist:
+            return Response(
+                {"detail": "Invalid chapter_id or lesson_id."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        upload = request.FILES.get("file")
+        if not upload:
+            return Response(
+                {"detail": "Please attach a CSV file."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        file_obj = TextIOWrapper(upload.file, encoding="utf-8-sig", newline="")
+
+        sample = file_obj.read(4096)
+        file_obj.seek(0)
+        try:
+            dialect = csv.Sniffer().sniff(sample, delimiters=[",", "\t", ";", "|"])
+            delimiter = dialect.delimiter
+        except csv.Error:
+            delimiter = ","
+
+        reader = csv.reader(file_obj, delimiter=delimiter)
+
+        try:
+            header = next(reader)
+        except StopIteration:
+            return Response({"detail": "CSV is empty."}, status=status.HTTP_400_BAD_REQUEST)
+
+        norm_header = [h.strip().lower() for h in header]
+
+        # Validate required base fields
+        missing = [f for f in self.REQUIRED_BASE_FIELDS if f not in norm_header]
+        if missing:
+            return Response(
+                {"detail": f"Missing required columns: {', '.join(missing)}"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        idx = {name: norm_header.index(name) for name in self.REQUIRED_BASE_FIELDS}
+
+        # Glossary columns
+        g_title_idxs = [i for i, h in enumerate(norm_header) if h == self.GLOSSARY_TITLE]
+        g_desc_idxs = [i for i, h in enumerate(norm_header) if h == self.GLOSSARY_DESC]
+        glossary_pairs = list(zip(g_title_idxs, g_desc_idxs))
+
+        created_counts = {"lesson_contents": 0, "glossaries": 0}
+        errors = []
+
+        @transaction.atomic
+        def process_rows():
+            nonlocal created_counts
+
+            for row_num, row in enumerate(reader, start=2):
+                if len(row) < len(norm_header):
+                    row = row + [""] * (len(norm_header) - len(row))
+
+                description = (row[idx["description"]]).strip()
+                video = (row[idx["video"]]).strip()
+
+                if not description:
+                    errors.append({"row": row_num, "error": "description is required"})
+                    continue
+
+                try:
+                    lc = GuideLessonContent.objects.create(
+                        lesson=lesson,
+                        description=description,
+                        video=video or None,
+                        image="lesson/default.png",  # optional fallback
+                    )
+                    created_counts["lesson_contents"] += 1
+                except Exception as e:
+                    errors.append({
+                        "row": row_num,
+                        "error": f"GuideLessonContent create failed: {e}"
+                    })
+                    continue
+
+                # Glossaries
+                glossaries = []
+                for ti, di in glossary_pairs:
+                    g_title = row[ti].strip() if ti < len(row) else ""
+                    g_desc = row[di].strip() if di < len(row) else ""
+                    if g_title:
+                        glossaries.append(GuideGlossary(
+                            lesson_content=lc,
+                            title=g_title,
+                            description=g_desc,
+                        ))
+
+                if glossaries:
+                    GuideGlossary.objects.bulk_create(glossaries)
+                    created_counts["glossaries"] += len(glossaries)
+
+        try:
+            process_rows()
+        except Exception as e:
+            return Response(
+                {"detail": "Import failed", "error": str(e)},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        return Response(
+            {
+                "success": True,
+                "message": "Guide lesson content imported successfully.",
+                "data": created_counts,
+            },
+            status=status.HTTP_201_CREATED,
+        )

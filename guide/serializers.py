@@ -47,3 +47,13 @@ class LessonContentModelSerializer(serializers.ModelSerializer):
     class Meta:
         model = GuideLessonContent
         fields = ['id', 'chapter_name', 'lesson', 'image', 'description', 'video', 'glossaries']
+
+
+class GlossaryModelSerialize(serializers.ModelSerializer):
+    class Meta:
+        model = GuideGlossary
+        fields = ["id", "lesson_content", "title", "description"]
+        extra_kwargs = {
+            "lesson_content": {"required": True},
+            "title": {"required": True},
+        }

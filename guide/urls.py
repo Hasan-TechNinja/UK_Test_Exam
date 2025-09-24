@@ -14,4 +14,6 @@ urlpatterns = [
     path('chapterAdmin/<int:pk>/', views.ChapterDetailsAdminView.as_view(), name='chapterAdmin'),
     path('lessonAdmin/<int:pk>/', views.LessonAdminDetailsView.as_view(), name='lessonAdmin'),
     path('lessonContentAdmin/<int:pk>/', views.LessonContentDetailsAdminView.as_view(), name='lessonContents'),
+
+    path("guide/lesson-content/import-csv/",views.ImportGuideLessonContentCSVView.as_view(),name="import-guide-lesson-content-csv",),
 ]
