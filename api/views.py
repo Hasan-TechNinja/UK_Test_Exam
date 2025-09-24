@@ -2101,7 +2101,6 @@ class FreeMockTestViewSet(viewsets.ViewSet):
 
         total = 0
         correct = 0
-        detailed_results = []
 
         for item in answers_data:
             question_id = item.get('question_id')
@@ -2126,19 +2125,9 @@ class FreeMockTestViewSet(viewsets.ViewSet):
             answer.is_correct = is_correct
             answer.save()
 
-            correct_choice_ids = list(correct_ids)
-
             total += 1
             if is_correct:
                 correct += 1
-
-            detailed_results.append({
-                'question_id': answer.question.id,
-                'question': answer.question.question_text,
-                'selected_options': selected_ids,
-                'correct_options': correct_choice_ids,
-                'is_correct': is_correct
-            })
 
         # Finalize session
         session.score = round((correct / total) * 100) if total else 0
@@ -2146,17 +2135,11 @@ class FreeMockTestViewSet(viewsets.ViewSet):
         session.save()
 
         return Response({
-            'success': True,
-            'message': 'All answers submitted and test session finished.',
-            'data': {
-                'session_id': session.id,
-                'score': session.score,
-                'total_questions': total,
-                'correct_answers': correct,
-                'wrong_answers': total - correct,
-                'results': detailed_results
-            }
+            "success": True,
+            "message": "All answers submitted and test session finished.",
+            "data": MockTestResultSerializer(session).data
         }, status=status.HTTP_200_OK)
+
 
 
 
