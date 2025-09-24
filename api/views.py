@@ -1729,26 +1729,63 @@ class MockTestViewSet(viewsets.ViewSet):
     def start(self, request):
         total_questions = 24
 
-        qs = (
-            Question.objects
-            .filter(type="mockTest")
-            .prefetch_related(
-                Prefetch("options", queryset=QuestionOption.objects.order_by("id")),
-                Prefetch("glossary", queryset=QuestionGlossary.objects.order_by("id")),
-            )
-        )
+        # 1. Count total practice questions by chapter
+        chapter_qs_counts = {}
+        total_available = 0
+        for ch in Chapter.objects.all():
+            count = Question.objects.filter(chapter=ch, type="practice").count()
+            if count > 0:
+                chapter_qs_counts[ch.id] = count
+                total_available += count
 
-        questions = list(qs)
-        if len(questions) < total_questions:
+        if total_available < total_questions:
             return Response({
                 "success": False,
-                "message": "Not enough questions to start the test.",
+                "message": f"Not enough practice questions across all chapters. Found {total_available}, need {total_questions}.",
                 "data": None
             }, status=status.HTTP_400_BAD_REQUEST)
 
-        selected_questions = random.sample(questions, total_questions)
-        session = MockTestSession.objects.create(user=request.user, total_questions=total_questions)
+        # 2. Calculate proportional allocation (raw decimals)
+        raw_counts = {}
+        chapter_counts = {}
+        for ch_id, count in chapter_qs_counts.items():
+            raw = (count / total_available) * total_questions
+            raw_counts[ch_id] = raw
+            chapter_counts[ch_id] = int(raw)  # start with floor()
 
+        # 3. Distribute rounding remainder based on fractional part
+        allocated = sum(chapter_counts.values())
+        remainder = total_questions - allocated
+        if remainder > 0:
+            sorted_chapters = sorted(
+                raw_counts.items(),
+                key=lambda x: (x[1] - int(x[1]), x[1]),  # fractional part, then bigger weight
+                reverse=True
+            )
+            for ch_id, _ in sorted_chapters[:remainder]:
+                chapter_counts[ch_id] += 1
+
+        # 4. Select random questions chapter-wise
+        selected_questions = []
+        for ch_id, count in chapter_counts.items():
+            qs = list(
+                Question.objects.filter(type="practice", chapter_id=ch_id)
+                .prefetch_related(
+                    Prefetch("options", queryset=QuestionOption.objects.order_by("id")),
+                    Prefetch("glossary", queryset=QuestionGlossary.objects.order_by("id")),
+                )
+            )
+            if len(qs) < count:
+                return Response({
+                    "success": False,
+                    "message": f"Not enough questions in Chapter {ch_id}. Need {count}, found {len(qs)}.",
+                    "data": None
+                }, status=status.HTTP_400_BAD_REQUEST)
+
+            selected_questions.extend(random.sample(qs, count))
+
+        # 5. Create session + answers
+        session = MockTestSession.objects.create(user=request.user, total_questions=total_questions)
         MockTestAnswer.objects.bulk_create([
             MockTestAnswer(session=session, question=q) for q in selected_questions
         ])
@@ -1757,20 +1794,25 @@ class MockTestViewSet(viewsets.ViewSet):
             selected_questions, many=True, context={"request": request}
         ).data
 
-        # update evaluation
+        # 6. Update evaluation
         profile = request.user.profile
         evaluation, _ = UserEvaluation.objects.get_or_create(user=profile)
         evaluation.MockTestTaken += 1
         evaluation.save(update_fields=['MockTestTaken'])
 
+        print("Chapter distribution:", chapter_counts)  # Debugging log
+
+        # 7. Return response
         return Response({
             "success": True,
             "message": "Mock test session started successfully.",
             "data": {
                 "session_id": session.id,
-                "questions": serialized
+                "questions": serialized,
+
             }
         }, status=status.HTTP_200_OK)
+
 
     def retrieve(self, request, pk=None):
         session = get_object_or_404(MockTestSession, pk=pk, user=request.user)
