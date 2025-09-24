@@ -41,10 +41,10 @@ class GuideLessonContentAdmin(admin.ModelAdmin):
     inlines = [GuideGlossaryInline]
 
 
-@admin.register(GuideGlossary)
-class GuideGlossaryAdmin(admin.ModelAdmin):
-    list_display = ("id", "title", "lesson_content", "description")
-    search_fields = ("title", "description", "lesson_content__lesson__name")
+# @admin.register(GuideGlossary)
+# class GuideGlossaryAdmin(admin.ModelAdmin):
+#     list_display = ("id", "title", "lesson_content", "description")
+#     search_fields = ("title", "description", "lesson_content__lesson__name")
 
 
 @admin.register(GuideLessonProgress)
@@ -53,3 +53,17 @@ class GuideLessonProgressAdmin(admin.ModelAdmin):
     list_filter = ("lesson", "user")
     search_fields = ("user__username", "lesson__name", "lesson__title")
     ordering = ("user", "lesson")
+
+    # Make all fields read-only
+    def get_readonly_fields(self, request, obj=None):
+        return [f.name for f in self.model._meta.fields]
+
+    # Disable add, change, and delete permissions
+    def has_add_permission(self, request):
+        return False
+
+    def has_change_permission(self, request, obj=None):
+        return False
+
+    def has_delete_permission(self, request, obj=None):
+        return False
