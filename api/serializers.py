@@ -130,9 +130,17 @@ class RegisterSerializer(serializers.ModelSerializer):
 
 
 class ProfileModelSerializer(serializers.ModelSerializer):
+    image = serializers.SerializerMethodField()
+
     class Meta:
         model = Profile
         exclude = ["user", "id", "created_at"]
+
+    def get_image(self, obj):
+        # Ensure path starts with /media/ if image exists
+        return f"/media/{obj.image.name}" if obj.image else None
+
+
 
 class GuidesSupportModelSerializer(serializers.ModelSerializer):
     class Meta:
@@ -218,12 +226,13 @@ class QuestionSerializer(serializers.ModelSerializer):
     correct_option_ids = serializers.SerializerMethodField()
     correct_option_texts = serializers.SerializerMethodField()
     glossaries = QuestionGlossarySerializer(source="glossary", many=True, read_only=True)
+    image = serializers.SerializerMethodField()
 
     class Meta:
         model = Question
         fields = [
             "id",
-            "chapter",             
+            "chapter",
             "type",
             "question_text",
             "image",
@@ -235,12 +244,15 @@ class QuestionSerializer(serializers.ModelSerializer):
             "glossaries",
         ]
 
+    def get_image(self, obj):
+        return f"/media/{obj.image.name}" if obj.image else None
+
     def get_correct_option_ids(self, obj):
-        # already prefetched in view
         return [opt.id for opt in obj.options.all() if opt.is_correct]
 
     def get_correct_option_texts(self, obj):
         return [opt.text for opt in obj.options.all() if opt.is_correct]
+
     
     
 
