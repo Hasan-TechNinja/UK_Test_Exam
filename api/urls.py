@@ -102,6 +102,8 @@ urlpatterns = [
     path('upload-study-csv/', views.ImportLessonContentCSVView.as_view(), name='upload_csv'),
     path("upload-guidesupport-csv/", views.ImportGuideSupportCSVView.as_view(), name="upload_guidesupport_csv"),
 
+    path('social/login/', views.SocialLogin.as_view(), name='googleAuth'),
+
 #hfsdh
 
 
