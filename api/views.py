@@ -1411,10 +1411,12 @@ class UserSubscriptionViewSet(viewsets.GenericViewSet):
         For this tutorial, we'll simulate a successful payment.
         """
         plan_id = request.data.get('plan_id')
-        if not plan_id:
+        device_id = request.data.get('device_id')
+
+        if not plan_id or not device_id:
             return Response({
                 "success": False,
-                "message": "Plan ID is required.",
+                "message": "Plan ID and Device ID are required.",
                 "data": None
             }, status=status.HTTP_400_BAD_REQUEST)
 
@@ -1436,6 +1438,7 @@ class UserSubscriptionViewSet(viewsets.GenericViewSet):
             user_subscription.is_active = True
             user_subscription.start_date = timezone.now()
             user_subscription.last_renewed = timezone.now()
+            user_subscription.device_id = device_id
 
             if plan.duration_days:
                 user_subscription.end_date = user_subscription.start_date + timedelta(days=plan.duration_days)

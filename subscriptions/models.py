@@ -35,6 +35,7 @@ class UserSubscription(models.Model):
     end_date = models.DateTimeField(null=True, blank=True, help_text="The date and time the subscription ends. Null for lifetime.")
     is_active = models.BooleanField(default=False, help_text="Indicates if the subscription is currently active.")
     last_renewed = models.DateTimeField(null=True, blank=True, help_text="Date of last successful renewal (for recurring plans).")
+    device_id = models.CharField(max_length=255, blank=True, help_text="Information about the device used for subscription (if applicable).")
 
     class Meta:
         verbose_name = "User Subscription"
