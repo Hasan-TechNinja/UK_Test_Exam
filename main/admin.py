@@ -16,10 +16,10 @@ class HomePageModelAdmin(admin.ModelAdmin):
     )
 admin.site.register(HomePage, HomePageModelAdmin)
 
-class ChapterAdmin(admin.ModelAdmin):
-    list_display = ('id', 'name', 'description')
-    search_fields = ('name', 'description')
-admin.site.register(Chapter, ChapterAdmin)
+# class ChapterAdmin(admin.ModelAdmin):
+#     list_display = ('id', 'name', 'description')
+#     search_fields = ('name', 'description')
+# admin.site.register(Chapter, ChapterAdmin)
 
 class GlossaryInline(admin.TabularInline):
     model = Glossary
@@ -38,10 +38,10 @@ class LessonContentInline(admin.StackedInline):
 
 
 
-class LessonAdmin(admin.ModelAdmin):
-    list_display = ('id', 'title', 'chapter')
-    list_filter = ('chapter',)
-    inlines = [LessonContentInline]
+# class LessonAdmin(admin.ModelAdmin):
+#     list_display = ('id', 'title', 'chapter')
+#     list_filter = ('chapter',)
+#     inlines = [LessonContentInline]
 
 
 
@@ -91,8 +91,8 @@ class LessonContentAdmin(admin.ModelAdmin):
 
 
 
-admin.site.register(Lesson, LessonAdmin)
-admin.site.register(LessonContent, LessonContentAdmin)
+# admin.site.register(Lesson, LessonAdmin)
+# admin.site.register(LessonContent, LessonContentAdmin)
 # admin.site.register(Glossary, GlossaryAdmin)
 
 
@@ -332,3 +332,229 @@ class QuestionAdmin(admin.ModelAdmin):
                 self.message_user(request, f"Error processing CSV: {str(e)}", level=messages.ERROR)
 
         return render(request, "admin/upload_csv.html")
+
+
+
+
+
+
+
+
+
+
+
+
+
+from django.contrib import admin, messages
+from django import forms
+from django.db import transaction
+from django.http import JsonResponse
+from django.shortcuts import render, redirect
+from django.urls import path
+from io import TextIOWrapper
+import csv
+
+from .models import Chapter, Lesson, LessonContent, Glossary
+
+
+# ---------- Inlines ----------
+class GlossaryInline(admin.TabularInline):
+    model = Glossary
+    extra = 1
+
+
+class LessonContentInline(admin.TabularInline):
+    model = LessonContent
+    extra = 1
+
+
+# ---------- Chapter ----------
+@admin.register(Chapter)
+class ChapterAdmin(admin.ModelAdmin):
+    list_display = ("id", "name", "description", "created")
+    search_fields = ("name", "description")
+    ordering = ("-created",)
+
+
+# ---------- Lesson ----------
+@admin.register(Lesson)
+class LessonAdmin(admin.ModelAdmin):
+    list_display = ("id", "name", "title", "chapter", "created")
+    list_filter = ("chapter",)
+    search_fields = ("name", "title", "chapter__name")
+    inlines = [LessonContentInline]
+    ordering = ("-created",)
+
+
+# ---------- CSV Upload Form ----------
+class LessonContentCSVUploadForm(forms.Form):
+    chapter = forms.ModelChoiceField(
+        queryset=Chapter.objects.all(),
+        required=False,
+        label="Select Chapter"
+    )
+    lesson = forms.ModelChoiceField(
+        queryset=Lesson.objects.all(),
+        required=True,
+        label="Select Lesson"
+    )
+    csv_file = forms.FileField(label="CSV File for Lesson Content")
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        if "chapter" in self.data:
+            try:
+                chapter_id = int(self.data.get("chapter"))
+                self.fields["lesson"].queryset = Lesson.objects.filter(
+                    chapter_id=chapter_id
+                ).order_by("name")
+            except (ValueError, TypeError):
+                pass
+
+
+# ---------- Lesson Content ----------
+@admin.register(LessonContent)
+class LessonContentAdmin(admin.ModelAdmin):
+    list_display = ("id", "lesson", "description", "video")
+    search_fields = ("lesson__name", "lesson__title", "description")
+    inlines = [GlossaryInline]
+
+    change_list_template = "admin/lessoncontent_change_list.html"
+
+    def get_urls(self):
+        urls = super().get_urls()
+        custom_urls = [
+            path(
+                "upload-csv/",
+                self.admin_site.admin_view(self.upload_csv),
+                name="lessoncontent_upload_csv",
+            ),
+            path(
+                "ajax/load-lessons/",
+                self.admin_site.admin_view(self.load_lessons),
+                name="lessoncontent_load_lessons",
+            ),
+        ]
+        return custom_urls + urls
+
+    def upload_csv(self, request):
+        if request.method == "POST":
+            form = LessonContentCSVUploadForm(request.POST, request.FILES)
+            if form.is_valid():
+                chapter = form.cleaned_data["chapter"]
+                lesson = form.cleaned_data["lesson"]
+                csv_file = form.cleaned_data["csv_file"]
+
+                if chapter and lesson.chapter != chapter:
+                    self.message_user(
+                        request,
+                        "Selected lesson does not belong to the selected chapter.",
+                        level=messages.ERROR,
+                    )
+                    return render(
+                        request,
+                        "admin/upload_lessoncontent_csv.html",
+                        {"form": form, "current_model": "Lesson Content"},
+                    )
+
+                try:
+                    decoded_file = TextIOWrapper(csv_file.file, encoding="utf-8")
+                    reader = csv.reader(decoded_file)
+                    header = next(reader)
+
+                    try:
+                        desc_idx = header.index("description")
+                        video_idx = header.index("video")
+                    except ValueError as e:
+                        self.message_user(
+                            request,
+                            f"Missing required CSV column: {e}",
+                            level=messages.ERROR,
+                        )
+                        return render(
+                            request,
+                            "admin/upload_lessoncontent_csv.html",
+                            {"form": form, "current_model": "Lesson Content"},
+                        )
+
+                    glossary_title_indices = [
+                        i for i, col in enumerate(header) if col == "glossary_title"
+                    ]
+                    glossary_desc_indices = [
+                        i for i, col in enumerate(header) if col == "glossary_description"
+                    ]
+
+                    if len(glossary_title_indices) != len(glossary_desc_indices):
+                        self.message_user(
+                            request,
+                            "Mismatch in glossary_title and glossary_description columns in CSV.",
+                            level=messages.ERROR,
+                        )
+                        return render(
+                            request,
+                            "admin/upload_lessoncontent_csv.html",
+                            {"form": form, "current_model": "Lesson Content"},
+                        )
+
+                    with transaction.atomic():
+                        for row_data in reader:
+                            description_val = row_data[desc_idx] if desc_idx < len(row_data) else ""
+                            video_val = row_data[video_idx] if video_idx < len(row_data) else ""
+
+                            lesson_content = LessonContent.objects.create(
+                                lesson=lesson,
+                                description=description_val,
+                                video=video_val,
+                            )
+
+                            for i in range(len(glossary_title_indices)):
+                                t_idx = glossary_title_indices[i]
+                                d_idx = glossary_desc_indices[i]
+
+                                glossary_title = row_data[t_idx] if t_idx < len(row_data) else ""
+                                glossary_description = row_data[d_idx] if d_idx < len(row_data) else ""
+
+                                if glossary_title:
+                                    Glossary.objects.create(
+                                        lesson_content=lesson_content,
+                                        title=glossary_title,
+                                        description=glossary_description or "",
+                                    )
+
+                    self.message_user(
+                        request,
+                        "Lesson Content CSV uploaded successfully!",
+                        level=messages.SUCCESS,
+                    )
+                    # ✅ auto-generate the correct admin changelist URL
+                    return redirect(
+                        "admin:%s_%s_changelist"
+                        % (LessonContent._meta.app_label, LessonContent._meta.model_name)
+                    )
+
+                except Exception as e:
+                    self.message_user(
+                        request, f"Error processing CSV: {str(e)}", level=messages.ERROR
+                    )
+            else:
+                self.message_user(
+                    request, "Please correct the errors in the form.", level=messages.ERROR
+                )
+        else:
+            form = LessonContentCSVUploadForm()
+
+        return render(
+            request,
+            "admin/upload_lessoncontent_csv.html",
+            {"form": form, "current_model": "Lesson Content"},
+        )
+
+
+    # AJAX endpoint to load Lessons based on Chapter
+    def load_lessons(self, request):
+        chapter_id = request.GET.get("chapter_id")
+        lessons = Lesson.objects.filter(chapter_id=chapter_id).order_by("name").values(
+            "id", "name"
+        )
+        return JsonResponse(list(lessons), safe=False)
