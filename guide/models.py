@@ -30,7 +30,7 @@ class GuideLessonContent(models.Model):
     lesson = models.ForeignKey(
         GuideLesson, on_delete=models.CASCADE, related_name="contents"
     )
-    image = models.ImageField(upload_to="lesson")
+    image = models.ImageField(upload_to="lesson", blank=True, null=True)
     description = models.TextField()
     video = models.URLField(blank=True, null=True)
 

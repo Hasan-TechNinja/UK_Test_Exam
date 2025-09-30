@@ -1,0 +1,143 @@
+{% extends 'admin/base_site.html' %}
+{% load i18n admin_urls static admin_modify %}
+
+{% block extrahead %}
+{{ block.super }}
+{{ media }} <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script> <style>
+/* Center content */
+#content-main {
+display: flex;
+justify-content: center;
+align-items: flex-start;
+padding: 40px 20px;
+}
+
+```
+    /* Form container */
+    .custom-form-wrapper {
+        background: #fff;
+        border-radius: 8px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        padding: 30px 40px;
+        max-width: 600px;
+        width: 100%;
+    }
+
+    .custom-form-wrapper h2 {
+        margin-bottom: 20px;
+        font-size: 1.4rem;
+        font-weight: 600;
+        color: #333;
+        border-bottom: 1px solid #eee;
+        padding-bottom: 10px;
+    }
+
+    .custom-form-wrapper .form-row {
+        margin-bottom: 18px;
+    }
+
+    .custom-form-wrapper label {
+        display: block;
+        font-weight: 600;
+        margin-bottom: 6px;
+        color: #444;
+    }
+
+    .custom-form-wrapper input[type="file"],
+    .custom-form-wrapper select,
+    .custom-form-wrapper input[type="text"],
+    .custom-form-wrapper input[type="number"] {
+        width: 100%;
+        padding: 8px 10px;
+        border: 1px solid #ccc;
+        border-radius: 6px;
+        font-size: 14px;
+    }
+
+    .custom-form-wrapper .submit-row {
+        text-align: right;
+        margin-top: 20px;
+    }
+
+    .custom-form-wrapper .submit-row input {
+        background-color: #417690;
+        border: none;
+        color: #fff;
+        padding: 10px 18px;
+        border-radius: 6px;
+        cursor: pointer;
+        font-size: 14px;
+        font-weight: 600;
+    }
+
+    .custom-form-wrapper .submit-row input:hover {
+        background-color: #315b70;
+    }
+
+    .errornote {
+        color: #a94442;
+        background: #f2dede;
+        border: 1px solid #ebccd1;
+        padding: 10px;
+        margin-bottom: 15px;
+        border-radius: 6px;
+    }
+</style>
+
+<script type="text/javascript">
+    $(function() {
+        function loadLessons(selectedLessonId = null) {
+            var chapterId = $('#id_guide_chapter').val();
+            var lessonSelect = $('#id_guide_lesson');
+            lessonSelect.empty().append($('<option>').val('').text('---------'));
+
+            if (chapterId) {
+                $.ajax({
+                    url: "{% url 'admin:guidelessoncontent_load_guide_lessons' %}",
+                    data: { 'chapter_id': chapterId },
+                    dataType: 'json',
+                    success: function (data) {
+                        $.each(data, function (key, value) {
+                            var option = $('<option>').val(value.id).text(value.name);
+                            if (selectedLessonId && value.id == selectedLessonId) {
+                                option.attr('selected', 'selected');
+                            }
+                            lessonSelect.append(option);
+                        });
+                    },
+                    error: function(xhr, status, error) {
+                        console.error("Error loading lessons:", error);
+                        alert("Failed to load lessons. Please try again.");
+                    }
+                });
+            }
+        }
+
+        $('#id_guide_chapter').change(function() {
+            loadLessons();
+        });
+
+        var initialChapterId = $('#id_guide_chapter').val();
+        var initialLessonId = $('#id_guide_lesson').val();
+        if (initialChapterId) {
+            loadLessons(initialLessonId);
+        }
+    });
+</script>
+```
+
+{% endblock %}
+
+{% block content %} <div id="content-main"> <div class="custom-form-wrapper"> <form action="" method="post" enctype="multipart/form-data">{% csrf_token %} <fieldset class="module aligned"> <h2>Upload Guide Lesson Content CSV</h2>
+{% if form.errors %} <p class="errornote">
+{% if form.non_field_errors %}
+{{ form.non_field_errors }}
+{% endif %} </p>
+{% endif %}
+{% for field in form %} <div class="form-row{% if field.errors %} errors{% endif %}">
+{{ field.errors }} <label for="{{ field.id_for_label }}">{{ field.label }}:</label>
+{{ field }}
+{% if field.help_text %} <p class="help">{{ field.help_text }}</p>
+{% endif %} </div>
+{% endfor %} </fieldset> <div class="submit-row"> <input type="submit" value="Upload CSV" class="default"> </div> </form> </div> </div>
+{% endblock %}
