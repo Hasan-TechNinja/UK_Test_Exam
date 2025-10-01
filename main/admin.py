@@ -5,7 +5,7 @@ import csv
 from io import TextIOWrapper
 from django.db import transaction
 from django.shortcuts import render, redirect
-from .models import Chapter, Question, QuestionOption
+from .models import Chapter, Question, QuestionOption, QuestionType
 
 from django import forms
 from django.http import JsonResponse
@@ -241,13 +241,6 @@ class QuestionOptionAdmin(admin.ModelAdmin):
 
 
 
-# class QuestionGlossaryAdmin(admin.ModelAdmin):
-#     list_display = ("id", "question", "title", "definition")
-
-# admin.site.register(QuestionGlossary, QuestionGlossaryAdmin)
-
-
-
 # Inline for Question Options
 class QuestionOptionInline(admin.TabularInline):
     model = QuestionOption
@@ -262,18 +255,17 @@ class QuestionGlossaryInline(admin.TabularInline):
 @admin.register(Question)
 class QuestionAdmin(admin.ModelAdmin):
     list_display = ('id', 'chapter', 'type', 'question_text', 'explanation', 'image', 'multiple_answers')
-    list_filter = ['type']
+    list_filter = ['type', 'chapter']
     search_fields = ['question_text', 'chapter__name']
 
     # Include both inlines
     inlines = [QuestionOptionInline, QuestionGlossaryInline]
 
-    # Custom template for CSV upload
+    # Custom template for CSV upload button in the changelist
     change_list_template = "admin/questions_change_list.html"
 
     # Add custom URL for CSV upload
     def get_urls(self):
-        from django.urls import path
         urls = super().get_urls()
         custom_urls = [
             path('upload-csv/', self.admin_site.admin_view(self.upload_csv), name='question_upload_csv'),
@@ -282,60 +274,91 @@ class QuestionAdmin(admin.ModelAdmin):
 
     # CSV upload view
     def upload_csv(self, request):
-        if request.method == "POST" and request.FILES.get("csv_file"):
-            csv_file = request.FILES["csv_file"]
+        chapters = Chapter.objects.all().order_by('name') 
+        question_types = QuestionType # <-- Corrected: Access QuestionType directly, it's not on the Question class
+
+        context = {
+            'chapters': chapters,
+            'question_types': question_types, 
+        }
+
+        if request.method == "POST":
+            csv_file = request.FILES.get("csv_file")
+            chapter_id = request.POST.get("chapter_id")
+            question_type_selected = request.POST.get("type", "practice") 
+
+            if not csv_file:
+                self.message_user(request, "Please upload a CSV file.", level=messages.ERROR)
+                return render(request, "admin/upload_csv.html", context) 
+            if not chapter_id:
+                self.message_user(request, "Please select a Chapter.", level=messages.ERROR)
+                return render(request, "admin/upload_csv.html", context) 
+
+            try:
+                chapter = Chapter.objects.get(id=chapter_id)
+            except Chapter.DoesNotExist:
+                self.message_user(
+                    request, f"Chapter with id {chapter_id} not found.", level=messages.ERROR
+                )
+                return render(request, "admin/upload_csv.html", context) 
 
             try:
                 decoded_file = TextIOWrapper(csv_file.file, encoding='utf-8')
                 reader = csv.DictReader(decoded_file)
+                
+                essential_headers = ["question_text", "correct_answer", "option_1"]
+                if not all(h in reader.fieldnames for h in essential_headers):
+                    self.message_user(request, f"CSV is missing essential headers: {', '.join(essential_headers)}.", level=messages.ERROR)
+                    return render(request, "admin/upload_csv.html", context) 
+
                 with transaction.atomic():
                     for row in reader:
-                        chapter_id = row.get("chapter_id")
-                        try:
-                            chapter = Chapter.objects.get(id=chapter_id)
-                        except Chapter.DoesNotExist:
-                            self.message_user(
-                                request, f"Chapter with id {chapter_id} not found.", level=messages.ERROR
-                            )
-                            continue
+                        multiple_answers = "," in row.get("correct_answer", "")
 
                         question = Question.objects.create(
                             chapter=chapter,
-                            type=row.get("type", "practice"),
+                            type=question_type_selected, 
                             question_text=row.get("question_text"),
                             explanation=row.get("explanation", ""),
-                            multiple_answers=row.get("multiple_answers", "false").lower() == "true"
+                            multiple_answers=multiple_answers
                         )
 
-                        # Create options dynamically (up to 9 options)
-                        for i in range(1, 10):
-                            option_text = row.get(f"option_{i}_text")
+                        correct_answers_input = row.get("correct_answer", "").strip()
+                        correct_answers_list = [c.strip().lower() for c in correct_answers_input.split(',')]
+
+                        for i in range(1, 10): 
+                            option_key = f"option_{i}"
+                            option_text = row.get(option_key)
+                            
                             if option_text:
-                                is_correct = row.get(f"option_{i}_correct", "false").lower() == "true"
+                                option_text = option_text.strip()
+                                is_correct = (option_text.lower() in correct_answers_list or
+                                              option_key.lower() in correct_answers_list)
+                                
                                 QuestionOption.objects.create(
                                     question=question,
                                     text=option_text,
                                     is_correct=is_correct
                                 )
 
-                        # Create glossary entries dynamically (up to 9 glossaries)
-                        for i in range(1, 10):
-                            glossary_title = row.get(f"glossary_{i}_title")
-                            glossary_definition = row.get(f"glossary_{i}_definition")
-                            if glossary_title:
-                                QuestionGlossary.objects.create(
-                                    question=question,
-                                    title=glossary_title,
-                                    definition=glossary_definition or ""
-                                )
+                        glossary_title = row.get("glossary_title")
+                        glossary_description = row.get("glossary_description")
+                        if glossary_title:
+                            QuestionGlossary.objects.create(
+                                question=question,
+                                title=glossary_title.strip(),
+                                description=glossary_description.strip() if glossary_description else ""
+                            )
 
                 self.message_user(request, "CSV uploaded successfully!", level=messages.SUCCESS)
                 return redirect("admin:main_question_changelist")
 
             except Exception as e:
                 self.message_user(request, f"Error processing CSV: {str(e)}", level=messages.ERROR)
+                return render(request, "admin/upload_csv.html", context)
 
-        return render(request, "admin/upload_csv.html")
+        return render(request, "admin/upload_csv.html", context)
+    
 
 
 

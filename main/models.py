@@ -179,7 +179,7 @@ class GuidesSupportGlossary(models.Model):
 
 QuestionType = {
     "practice": "practice",
-    "mockTest": "mockTest",
+    # "mockTest": "mockTest",
     "freeMockTest": "freeMockTest",
 }
     
