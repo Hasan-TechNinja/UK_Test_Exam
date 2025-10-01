@@ -7,6 +7,10 @@ from django.db import transaction
 from django.shortcuts import render, redirect
 from .models import Chapter, Question, QuestionOption
 
+from django import forms
+from django.http import JsonResponse
+from django.urls import path
+
 
 # Register your models here.
 
@@ -56,13 +60,13 @@ class LessonProgressAdmin(admin.ModelAdmin):
 
     # Disable add, change, and delete permissions
     def has_add_permission(self, request):
-        return False
+        return True
 
     def has_change_permission(self, request, obj=None):
         return False
 
     def has_delete_permission(self, request, obj=None):
-        return False
+        return True
 
 
 admin.site.register(LessonProgress, LessonProgressAdmin)
@@ -108,13 +112,13 @@ class ProfileModelAdmin(admin.ModelAdmin):
 
     # Disable add, change, and delete permissions
     def has_add_permission(self, request):
-        return False
+        return True
 
     def has_change_permission(self, request, obj=None):
         return False
 
     def has_delete_permission(self, request, obj=None):
-        return False
+        return True
 
 
 admin.site.register(Profile, ProfileModelAdmin)
@@ -136,13 +140,13 @@ class UserEvaluationModelAdmin(admin.ModelAdmin):
 
     # Disable add, change, and delete
     def has_add_permission(self, request):
-        return False
+        return True
 
     def has_change_permission(self, request, obj=None):
         return False
 
     def has_delete_permission(self, request, obj=None):
-        return False
+        return True
 
 
 admin.site.register(UserEvaluation, UserEvaluationModelAdmin)
@@ -214,13 +218,13 @@ class ChapterProgressAdmin(admin.ModelAdmin):
 
     # Disable add, change, and delete permissions
     def has_add_permission(self, request):
-        return False
+        return True
 
     def has_change_permission(self, request, obj=None):
         return False
 
     def has_delete_permission(self, request, obj=None):
-        return False
+        return True
 
 
 
@@ -333,28 +337,6 @@ class QuestionAdmin(admin.ModelAdmin):
 
         return render(request, "admin/upload_csv.html")
 
-
-
-
-
-
-
-
-
-
-
-
-
-from django.contrib import admin, messages
-from django import forms
-from django.db import transaction
-from django.http import JsonResponse
-from django.shortcuts import render, redirect
-from django.urls import path
-from io import TextIOWrapper
-import csv
-
-from .models import Chapter, Lesson, LessonContent, Glossary
 
 
 # ---------- Inlines ----------
