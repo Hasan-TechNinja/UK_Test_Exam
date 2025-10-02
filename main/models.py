@@ -62,7 +62,7 @@ class UserEvaluation(models.Model):
 class HomePage(models.Model):
     title = models.CharField(max_length=100)
     description = models.TextField(max_length=200)
-    image = models.ImageField(upload_to="home")
+    image = models.ImageField(upload_to="home", blank=True, null=True)
 
     def __str__(self):
         return self.title
@@ -96,7 +96,7 @@ class Lesson(models.Model):
     
 class LessonContent(models.Model):
     lesson = models.ForeignKey(Lesson, on_delete=models.CASCADE)
-    image = models.ImageField(upload_to="lesson")
+    image = models.ImageField(upload_to="lesson", blank=True, null=True)
     description = models.TextField()
     # glossary = models.JSONField(default=list)  # ✅ cleaner
     video = models.URLField(blank=True, null=True)
